@@ -60,7 +60,7 @@ main>section{display:flex;flex-direction:column;gap:16px}
 .streak{flex:none;font-size:13px;font-weight:700;padding:6px 11px;border-radius:999px;background:var(--pen-soft);color:var(--pen);font-variant-numeric:tabular-nums}
 
 /* tabs */
-.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;border-radius:12px;background:var(--track)}
+.tabs{display:grid;grid-template-columns:repeat(2,1fr);gap:4px;padding:4px;border-radius:12px;background:var(--track)}
 .tab{border:0;background:transparent;padding:9px 0;border-radius:9px;font-size:15px;font-weight:500;color:var(--ink-2)}
 .tab[aria-selected="true"]{background:var(--surface);color:var(--ink);font-weight:700;box-shadow:var(--shadow)}
 
@@ -180,6 +180,8 @@ main>section{display:flex;flex-direction:column;gap:16px}
 .fb-h{font-size:15px;font-weight:700}
 .fb-h.ok{color:var(--accent)}
 .fb-h.no{color:var(--pen)}
+.fb-h.skip{color:var(--ink-2)}
+.oops{align-self:flex-start;padding-top:2px}
 .fb-w{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px}
 .fb-w b{font-family:var(--f-word);font-size:22px;font-weight:600}
 .fb-m{font-size:15px}
@@ -286,12 +288,10 @@ main>section{display:flex;flex-direction:column;gap:16px}
   <nav class="tabs" id="tabs" role="tablist" aria-label="화면">
     <button class="tab" role="tab" data-act="tab" data-v="home" aria-selected="true">테스트</button>
     <button class="tab" role="tab" data-act="tab" data-v="words" aria-selected="false">단어 보기</button>
-    <button class="tab" role="tab" data-act="tab" data-v="log" aria-selected="false">기록</button>
   </nav>
   <main>
     <section id="v-home"></section>
     <section id="v-words" hidden></section>
-    <section id="v-log" hidden></section>
     <section id="v-quiz" hidden></section>
     <section id="v-result" hidden></section>
   </main>
@@ -805,7 +805,7 @@ function spk(word,cls){return TTS?`<button type="button" class="spk${cls?' '+cls
 /* ---------- 저장 (이 기기 브라우저) ---------- */
 const KEY='soyeon-vocab-v1';
 let canStore=true;
-function blank(){return{stats:{},review:{},history:[],prefs:{days:[String(DAYS[DAYS.length-1])],groups:GRPS.slice(),mode:'mix',n:20,sound:true}};}
+function blank(){return{stats:{},review:{},played:{},prefs:{days:[String(DAYS[DAYS.length-1])],groups:GRPS.slice(),mode:'mix',n:20,sound:true}};}
 function load(){
   const b=blank();let o=null;
   try{const r=localStorage.getItem(KEY);if(r)o=JSON.parse(r);localStorage.setItem(KEY+'-t','1');localStorage.removeItem(KEY+'-t');}
@@ -813,7 +813,9 @@ function load(){
   if(o&&typeof o==='object'){
     if(o.stats&&typeof o.stats==='object')b.stats=o.stats;
     if(o.review&&typeof o.review==='object')b.review=o.review;
-    if(Array.isArray(o.history))b.history=o.history;
+    if(o.played&&typeof o.played==='object')b.played=o.played;
+    /* 예전 점수 기록은 날짜별 횟수만 남기고 지움 */
+    if(Array.isArray(o.history))o.history.forEach(h=>{if(h&&h.kind!=='practice'&&h.date)b.played[h.date]=(b.played[h.date]||0)+1;});
     if(o.prefs&&typeof o.prefs==='object')Object.assign(b.prefs,o.prefs);
   }
   const P=b.prefs,last=String(DAYS[DAYS.length-1]);
@@ -833,20 +835,21 @@ function load(){
   return b;
 }
 let S=load();
+save(); /* 예전 점수 기록을 바로 지움 */
 function save(){if(!canStore)return;try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){canStore=false;}}
 
 function selPool(days,groups){return WORDS.filter(x=>days.includes(String(x.d))&&groups.includes(grp(x)));}
 function daysLabel(days){return 'Day '+days.slice().sort((a,b)=>a-b).join('·');}
 function groupsLabel(gs){return gs.length===GRPS.length?'전체':gs.join('·');}
-/* 문제 수 선택지: 10·20·40 중 고른 단어 수보다 적은 것 + 전체 */
-function nOptions(L){if(L>40)return [10,20,40];const o=[10,20,40].filter(v=>v<L);o.push(L);return o;}
+/* 문제 수 선택지: 10·20·40·80 중 고른 단어 수보다 적은 것 + 전체 */
+function nOptions(L){const o=[10,20,40,80].filter(v=>v<L);o.push(L);return o;}
 function effN(n,L){const o=nOptions(L),want=Math.min(n,L);let e=o[0];for(const v of o)if(v<=want)e=v;return e;}
 function dueWords(){const t=today();return Object.keys(S.review).filter(k=>BYW[k]&&S.review[k].due<=t).map(k=>BYW[k]);}
-function plays(){return S.history.filter(h=>h.kind!=='practice');}
+function prunePlayed(){const cut=addDays(today(),-120);for(const k of Object.keys(S.played))if(k<cut)delete S.played[k];}
 function streak(){
-  const set=new Set(plays().map(h=>h.date));let d=today();
-  if(!set.has(d))d=addDays(d,-1);
-  let n=0;while(set.has(d)){n++;d=addDays(d,-1);}return n;
+  const P=S.played;let d=today();
+  if(!P[d])d=addDays(d,-1);
+  let n=0;while(P[d]){n++;d=addDays(d,-1);}return n;
 }
 
 /* ---------- 문제 만들기 ---------- */
@@ -885,14 +888,14 @@ const WV={day:String(DAYS[DAYS.length-1]),cover:false,view:'book'};
 
 function show(v){
   cur=v;
-  ['home','words','log','quiz','result'].forEach(n=>{document.getElementById('v-'+n).hidden=(n!==v);});
-  $('#tabs').hidden=!['home','words','log'].includes(v);
+  ['home','words','quiz','result'].forEach(n=>{document.getElementById('v-'+n).hidden=(n!==v);});
+  $('#tabs').hidden=!['home','words'].includes(v);
   document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.v===v)));
   if(v!=='quiz')$('#nextbar').hidden=true;
   document.body.classList.toggle('in-quiz',v==='quiz');
   window.scrollTo(0,0);
 }
-function render(v){if(v==='home')renderHome();else if(v==='words')renderWords();else if(v==='log')renderLog();}
+function render(v){if(v==='home')renderHome();else if(v==='words')renderWords();}
 
 function renderHeader(){
   const d=new Date();
@@ -923,16 +926,16 @@ function togglePref(k,v){
 function renderHome(){
   const t=today(),due=dueWords(),P=S.prefs,pl=selPool(P.days,P.groups),L=pl.length,en=effN(P.n,L);
   const waiting=Object.keys(S.review).filter(k=>BYW[k]).length-due.length;
-  const todays=plays().filter(h=>h.date===t);
+  const cnt=S.played[t]||0;
   const unseen=pl.filter(x=>!(S.stats[x.w]&&S.stats[x.w].seen)).length;
   let h='';
-  if(!canStore)h+=`<p class="warn">이 화면에서는 기록이 저장되지 않아요. 휴대폰 브라우저에서 링크를 직접 열어 주세요.</p>`;
-  h+=todays.length
-    ?`<p class="status done"><span class="dot"></span><span>오늘 <b>${todays.length}번</b> 했어요 · 마지막 ${todays[0].label} <b>${todays[0].correct}/${todays[0].total}</b></span></p>`
+  if(!canStore)h+=`<p class="warn">이 화면에서는 복습할 단어가 저장되지 않아요. 휴대폰 브라우저에서 링크를 직접 열어 주세요.</p>`;
+  h+=cnt
+    ?`<p class="status done"><span class="dot"></span><span>오늘 <b>${cnt}번</b> 했어요</span></p>`
     :`<p class="status"><span class="dot"></span><span>오늘은 아직 안 했어요</span></p>`;
   if(due.length){
     h+=`<section class="panel rev">
-      <div><p class="eyebrow">복습 먼저</p><h2 class="h2">틀렸던 단어 <span class="pen-n">${due.length}</span>개</h2></div>
+      <div><p class="eyebrow">복습 먼저</p><h2 class="h2">다시 볼 단어 <span class="pen-n">${due.length}</span>개</h2></div>
       <p class="sub">복습에서 두 번 맞히면 목록에서 빠져요.</p>
       <button class="btn pen" data-act="review">복습 시작</button>
     </section>`;
@@ -999,11 +1002,13 @@ function spellResult(it){
 function feedback(it){
   const w=it.w;
   const later=Q.kind==='practice'?'':' · 내일 복습에 다시 나와요';
-  const head=it.ok?(it.hint?`<p class="fb-h ok">힌트 보고 맞혔어요${later}</p>`:`<p class="fb-h ok">정답이에요</p>`)
+  const head=it.skip?`<p class="fb-h skip">이 문제는 빼고 채점해요</p>`
+    :it.ok?(it.hint?`<p class="fb-h ok">힌트 보고 맞혔어요${later}</p>`:`<p class="fb-h ok">정답이에요</p>`)
     :`<p class="fb-h no">아쉬워요${later}</p>`;
   return `<div class="fb">${head}
     <p class="fb-w"><b lang="en">${esc(w.w)}</b>${spk(w.w)}${w.p?`<span class="ipa">[${esc(w.p)}]</span>`:''}<span class="fb-m">${esc(w.m)}</span></p>
     <div class="hint ${w.g}"><span class="hint-l">단어 지도 · ${GROUPS[w.g].full}</span>${esc(w.h)}</div>
+    ${it.ok?'':`<button class="linkbtn oops" data-act="oops">${it.skip?'다시 채점에 넣기':'잘못 눌렀어요 · 이 문제 빼기'}</button>`}
   </div>`;
 }
 
@@ -1011,7 +1016,7 @@ function renderQ(){
   const it=Q.items[Q.i],w=it.w,n=Q.items.length,done=it.done;
   const prog=Q.i+(done?1:0);
   const head=Q.quitAsk
-    ?`<div class="quitask"><p>지금 그만하면 이번 테스트는 기록되지 않아요.</p><div class="row"><button class="sbtn" data-act="quit-no">계속하기</button><button class="sbtn danger" data-act="quit-yes">그만하기</button></div></div>`
+    ?`<div class="quitask"><p>지금 그만하면 이번 테스트는 복습에 반영되지 않아요.</p><div class="row"><button class="sbtn" data-act="quit-no">계속하기</button><button class="sbtn danger" data-act="quit-yes">그만하기</button></div></div>`
     :`<div class="qbar"><button class="sbtn" data-act="quit">그만</button>
        <div class="prog" role="progressbar" aria-label="진행" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${prog}"><span style="width:${(prog/n*100).toFixed(1)}%"></span></div>
        <span class="qcount">${Q.i+1} / ${n}</span>
@@ -1033,9 +1038,9 @@ function renderQ(){
         <p class="lmean">뜻 <b>${esc(w.m)}</b></p>`
       :`<p class="ask">영어로 쓰세요</p><p class="mprompt">${esc(w.m)}</p>`;
     if(!done){
-      body+=tiles(w.w,typedOf(it.draft),!L,it.hint)+
+      body+=tiles(w.w,typedOf(it.draft),false,it.hint)+
         (it.hint?`<p class="hintline">힌트<span lang="en">${esc(hintPattern(w.w))}</span></p>`
-          :`<p class="len">${L?'':`첫 글자 <b lang="en">${esc(w.w[0])}</b> · `}${w.w.length}글자${w.w.includes('-')?' (하이픈 포함)':''}</p>`)+`
+          :`<p class="len">${w.w.length}글자${w.w.includes('-')?' (하이픈 포함)':''}</p>`)+`
         <form id="spellForm" class="spell" autocomplete="off">
           <input id="spellIn" type="text" lang="en" maxlength="${w.w.length+3}" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" aria-label="영어 단어 쓰기" value="${esc(it.draft)}">
           <button class="btn" type="submit">확인</button>
@@ -1075,12 +1080,12 @@ function next(){
 
 function finish(){
   const t=today(),now=new Date();
-  const total=Q.items.length,correct=Q.items.filter(it=>it.ok).length;
-  const wrong=Q.items.filter(it=>!it.ok).map(it=>it.w);
-  const hinted=Q.items.filter(it=>it.ok&&it.hint).map(it=>it.w);
-  let rec=null;
+  const items=Q.items.filter(it=>!it.skip),skipped=Q.items.length-items.length;
+  const total=items.length,correct=items.filter(it=>it.ok).length;
+  const wrong=items.filter(it=>!it.ok).map(it=>it.w);
+  const hinted=items.filter(it=>it.ok&&it.hint).map(it=>it.w);
   if(Q.kind!=='practice'){
-    for(const it of Q.items){
+    for(const it of items){
       const k=it.w.w;
       const st=S.stats[k]||(S.stats[k]={seen:0,right:0,wrong:0,last:''});
       st.seen++;st.last=t;
@@ -1089,24 +1094,24 @@ function finish(){
       if(!it.ok||it.hint)S.review[k]={due:addDays(t,1),streak:0}; /* 힌트 보고 맞힌 단어도 내일 다시 */
       else if(r&&r.due<=t){r.streak=(r.streak||0)+1;if(r.streak>=2)delete S.review[k];else r.due=addDays(t,2);}
     }
-    rec={date:t,time:hhmm(now),kind:Q.kind,label:Q.label,mode:Q.mode,total,correct,wrong:wrong.map(x=>x.w),hinted:hinted.map(x=>x.w)};
-    S.history.unshift(rec);if(S.history.length>400)S.history.length=400;
+    S.played[t]=(S.played[t]||0)+1;prunePlayed(); /* 점수는 남기지 않고 한 날짜만 셈 */
     save();
   }
-  R={rec,kind:Q.kind,label:Q.label,mode:Q.mode,total,correct,wrong,hinted};
+  const rec={date:t,time:hhmm(now),label:Q.label,mode:Q.mode,total,correct,skipped,wrong:wrong.map(x=>x.w),hinted:hinted.map(x=>x.w)};
+  R={rec,kind:Q.kind,label:Q.label,mode:Q.mode,total,correct,wrong,hinted,skipped};
   Q=null;show('result');renderResult();renderHeader();
 }
 
 function renderResult(){
-  const {total,correct,wrong,hinted,kind,label,mode}=R,ratio=correct/total;
+  const {total,correct,wrong,hinted,kind,label,mode,skipped}=R,ratio=total?correct/total:0;
   const again=wrong.concat(hinted),hs=new Set(hinted.map(w=>w.w));
-  const msg=ratio===1&&!hinted.length?'다 맞았어요!':ratio>=.8?'거의 다 외웠어요.':ratio>=.5?'반 넘게 맞혔어요.':'틀린 단어가 곧 외울 단어예요.';
+  const msg=!total?'모든 문제를 뺐어요.':ratio===1&&!hinted.length?'다 맞았어요!':ratio>=.8?'거의 다 외웠어요.':ratio>=.5?'반 넘게 맞혔어요.':'틀린 단어가 곧 외울 단어예요.';
   const parts=[];if(wrong.length)parts.push(`틀린 ${wrong.length}개`);if(hinted.length)parts.push(`힌트 받은 ${hinted.length}개`);
   const tail=kind!=='practice'&&parts.length?` ${parts.join('와 ')}는 내일 복습에 나와요.`:'';
   let h=`<div class="res">
     <p class="eyebrow">${esc(label)} · ${MODES[mode]}</p>
     <p class="score" aria-label="${total}문제 중 ${correct}개 정답"><span class="sc-n">${correct}</span><span class="sc-d">/ ${total}</span>${ratio===1?CIRCLE_WIDE:''}</p>
-    <p class="res-msg">${msg}${tail}</p>
+    <p class="res-msg">${msg}${tail}${skipped&&total?` 잘못 눌러 뺀 ${skipped}문제는 채점하지 않았어요.`:''}</p>
   </div>`;
   if(again.length){
     h+=`<section class="panel"><h2 class="sh">다시 볼 단어 ${again.length}개</h2><ul class="wlist">${again.map(w=>`<li>
@@ -1145,59 +1150,14 @@ function renderWords(){
   $('#v-words').innerHTML=h;
 }
 
-/* ---------- 기록 ---------- */
-function renderLog(){
-  const t=today(),ps=plays(),by={};
-  ps.forEach(r=>{(by[r.date]=by[r.date]||[]).push(r);});
-  let cells='';
-  for(let i=13;i>=0;i--){
-    const d=addDays(t,-i),[y,m,dd]=d.split('-').map(Number),hs=by[d]||[];
-    cells+=`<div class="cell${d===t?' today':''}" aria-label="${fmtDate(d)}${hs.length?' '+hs.length+'번':' 안 함'}">
-      <span class="wd">${WD[new Date(y,m-1,dd).getDay()]}</span><span class="dn ringed">${dd}${hs.length?CIRCLE:''}</span><span class="cnt">${hs.length?hs.length+'번':''}</span></div>`;
-  }
-  let week=0;for(let i=0;i<7;i++)if(by[addDays(t,-i)])week++;
-  let h=`<section class="panel">
-    <h2 class="h2">최근 2주</h2>
-    <div class="strip">${cells}</div>
-    <div class="kpis"><span><b>${streak()}</b>일 연속</span><span>최근 7일 중 <b>${week}</b>일</span></div>
-  </section>`;
-  h+=`<section class="panel"><h2 class="h2">Day별 진도</h2>${DAYS.map(d=>{
-    const ws=WORDS.filter(x=>x.d===d);
-    const known=ws.filter(x=>S.stats[x.w]&&S.stats[x.w].right>0&&!S.review[x.w]).length;
-    const seen=ws.filter(x=>S.stats[x.w]&&S.stats[x.w].seen>0).length;
-    const pend=ws.filter(x=>S.review[x.w]).length;
-    return `<div class="mrow"><div class="mtop"><b>Day ${d}</b><span>맞힌 단어 ${known} / ${ws.length}</span></div>
-      <div class="mbar"><span style="width:${(known/ws.length*100).toFixed(1)}%"></span></div>
-      <p class="msub">본 단어 ${seen}개 · 복습 대기 ${pend}개</p></div>`;
-  }).join('')}</section>`;
-  if(!ps.length){
-    h+=`<p class="empty">아직 기록이 없어요.<br>테스트를 끝내면 날짜별로 여기 쌓여요.</p>`;
-  }else{
-    const dates=Object.keys(by).sort().reverse();
-    h+=`<section class="field"><h2 class="h2">테스트 기록</h2>${dates.slice(0,21).map(d=>`<div class="dgroup"><p class="dhead">${fmtDate(d)}</p>${by[d].map(r=>`<div class="srow">
-      <span class="t">${esc(r.time)}</span><span class="l">${esc(r.label)} · ${MODES[r.mode]||''}</span><span class="s${r.correct===r.total?' full':''}">${r.correct}/${r.total}</span>
-      ${r.wrong&&r.wrong.length?`<span class="w">틀림 <span lang="en">${esc(r.wrong.join(', '))}</span></span>`:''}
-      ${r.hinted&&r.hinted.length?`<span class="w">힌트 <span lang="en">${esc(r.hinted.join(', '))}</span></span>`:''}</div>`).join('')}</div>`).join('')}</section>`;
-    h+=`<div class="actions"><button class="btn ghost" data-act="copy-log">최근 7일 기록 복사</button><div class="copyfb" id="fb-log" hidden></div></div>`;
-  }
-  h+=`<p class="foot">기록은 이 휴대폰 브라우저에만 저장돼요. 다른 기기에서 열면 처음부터 시작해요.</p>`;
-  $('#v-log').innerHTML=h;
-}
-
 /* ---------- 복사 ---------- */
 function resultText(){
   const r=R&&R.rec;if(!r)return '';
   const lines=[`[단어 테스트] ${fmtDate(r.date)} ${r.time}`,`${r.label} · ${MODES[r.mode]} · ${r.correct}/${r.total}`];
   if(r.wrong.length)lines.push(`틀린 단어: ${r.wrong.join(', ')}`);
   if(r.hinted&&r.hinted.length)lines.push(`힌트 보고 맞힌 단어: ${r.hinted.join(', ')}`);
-  if(!r.wrong.length&&!(r.hinted&&r.hinted.length))lines.push('다 맞았어요');
-  return lines.join('\n');
-}
-function logText(){
-  const t=today(),by={};plays().forEach(r=>{(by[r.date]=by[r.date]||[]).push(r);});
-  const lines=['[단어 기록] 최근 7일'];
-  for(let i=0;i<7;i++){const d=addDays(t,-i),hs=by[d];
-    lines.push(`${fmtDate(d)}: ${hs?hs.slice().reverse().map(r=>`${r.label} ${MODES[r.mode]||''} ${r.correct}/${r.total}`).join(', '):'안 함'}`);}
+  if(r.skipped)lines.push(`잘못 눌러 뺀 문제: ${r.skipped}개`);
+  if(r.total&&!r.wrong.length&&!(r.hinted&&r.hinted.length))lines.push('다 맞았어요');
   return lines.join('\n');
 }
 let toastT=0;
@@ -1222,6 +1182,7 @@ document.addEventListener('click',e=>{
   else if(a==='opt'){if(Q)choose(Number(b.dataset.k));}
   else if(a==='giveup'){if(Q)giveup();}
   else if(a==='next')next();
+  else if(a==='oops'){if(Q){const it=Q.items[Q.i];if(it.done&&!it.ok){it.skip=!it.skip;renderQ();}}}
   else if(a==='say')speak(b.dataset.w);
   else if(a==='say-slow'){if(Q)speak(Q.items[Q.i].w.w,0.55);}
   else if(a==='sound'){S.prefs.sound=!S.prefs.sound;save();if(!S.prefs.sound&&TTS)TTS.cancel();if(Q)renderQ();}
@@ -1231,7 +1192,6 @@ document.addEventListener('click',e=>{
   else if(a==='retry'){if(R){const ag=R.wrong.concat(R.hinted||[]);if(ag.length)startQuiz(ag,'practice','다시 풀기',R.mode);}}
   else if(a==='home'){show('home');renderHome();}
   else if(a==='copy-result')copyText(resultText(),'fb-result');
-  else if(a==='copy-log')copyText(logText(),'fb-log');
   else if(a==='wday'){WV.day=b.dataset.val;renderWords();}
   else if(a==='wview'){WV.view=b.dataset.val;renderWords();}
   else if(a==='pday')togglePref('days',b.dataset.val);
@@ -1246,7 +1206,7 @@ document.addEventListener('submit',e=>{
 document.addEventListener('input',e=>{
   if(e.target.id!=='spellIn'||!Q)return;
   const it=Q.items[Q.i];it.draft=e.target.value;
-  $('#tiles').outerHTML=tiles(it.w.w,typedOf(it.draft),it.mode!=='listen',it.hint);
+  $('#tiles').outerHTML=tiles(it.w.w,typedOf(it.draft),false,it.hint);
   $('#imeWarn').hidden=!HANGUL.test(it.draft);
 });
 document.addEventListener('keydown',e=>{
@@ -1258,7 +1218,7 @@ document.addEventListener('keydown',e=>{
   else if(!it.done&&it.mode==='mc'&&/^[1-4]$/.test(e.key))choose(Number(e.key)-1);
 });
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible'&&['home','words','log'].includes(cur)){renderHeader();render(cur);}
+  if(document.visibilityState==='visible'&&['home','words'].includes(cur)){renderHeader();render(cur);}
 });
 
 renderHeader();renderHome();show('home');
