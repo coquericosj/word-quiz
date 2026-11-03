@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-title" content="단어장">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<title>단어장</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+KR:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap">
+<style>
+/* Layout: one narrow column like a pocket word card. Category colors follow the paper word maps (어원 청록, 이미지 갈색, 여러 뜻 보라, 헷갈리는 짝 장미). Grading marks are a red pen: circle for right, slash for wrong. */
+:root{
+  --bg:#F4F6F3;--surface:#FFFFFF;--track:#E7EBE7;--ink:#1E2523;--ink-2:#5A6561;--line:#D8DED9;
+  --accent:#2E5B50;--accent-ink:#FFFFFF;--accent-soft:#E2EEE9;
+  --pen:#CF3A2F;--pen-ink:#FFFFFF;--pen-soft:#FBE9E6;
+  --root:#2F6455;--root-soft:#E3EFEA;--image:#87552A;--image-soft:#F6ECDC;
+  --multi:#5A5080;--multi-soft:#ECE9F4;--pair:#8C4460;--pair-soft:#F6E6ED;
+  --shadow:0 1px 2px rgb(20 32 28 / .06),0 6px 18px rgb(20 32 28 / .05);
+  --f-ui:'IBM Plex Sans KR','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',system-ui,sans-serif;
+  --f-word:'Source Serif 4','Noto Serif',Georgia,'Times New Roman',serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111514;--surface:#1A1F1E;--track:#252C2A;--ink:#E6EBE8;--ink-2:#9BA8A3;--line:#2E3734;
+  --accent:#86C6B2;--accent-ink:#0E1A16;--accent-soft:#1D2E29;
+  --pen:#FF7B6F;--pen-ink:#2A0F0C;--pen-soft:#35201D;
+  --root:#8DCBB8;--root-soft:#1C2D28;--image:#E3B27F;--image-soft:#2D2418;
+  --multi:#B9AEE0;--multi-soft:#252239;--pair:#E9A0BC;--pair-soft:#33202A;
+  --shadow:none;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111514;--surface:#1A1F1E;--track:#252C2A;--ink:#E6EBE8;--ink-2:#9BA8A3;--line:#2E3734;
+  --accent:#86C6B2;--accent-ink:#0E1A16;--accent-soft:#1D2E29;
+  --pen:#FF7B6F;--pen-ink:#2A0F0C;--pen-soft:#35201D;
+  --root:#8DCBB8;--root-soft:#1C2D28;--image:#E3B27F;--image-soft:#2D2418;
+  --multi:#B9AEE0;--multi-soft:#252239;--pair:#E9A0BC;--pair-soft:#33202A;
+  --shadow:none;color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:16px;line-height:1.55;word-break:keep-all;overflow-wrap:break-word;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));-webkit-tap-highlight-color:transparent}
+p,h1,h2,h3,ul,ol{margin:0}
+ul,ol{padding:0;list-style:none}
+button{font:inherit;color:inherit;cursor:pointer}
+button:disabled{cursor:default}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[lang="en"]{word-break:normal}
+
+.wrap{max-width:480px;margin:0 auto;padding-block:16px 56px;display:flex;flex-direction:column;gap:16px}
+body.in-quiz .wrap{padding-block-end:128px}
+main>section{display:flex;flex-direction:column;gap:16px}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:4px}
+.bname{font-size:19px;font-weight:700;letter-spacing:-0.01em;line-height:1.3}
+.bdate{font-size:13px;color:var(--ink-2)}
+.streak{flex:none;font-size:13px;font-weight:700;padding:6px 11px;border-radius:999px;background:var(--pen-soft);color:var(--pen);font-variant-numeric:tabular-nums}
+
+/* tabs */
+.tabs{display:grid;grid-template-columns:repeat(2,1fr);gap:4px;padding:4px;border-radius:12px;background:var(--track)}
+.tab{border:0;background:transparent;padding:9px 0;border-radius:9px;font-size:15px;font-weight:500;color:var(--ink-2)}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--ink);font-weight:700;box-shadow:var(--shadow)}
+
+/* shared */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px 18px;display:flex;flex-direction:column;gap:16px;box-shadow:var(--shadow)}
+.h2{font-size:20px;font-weight:700;letter-spacing:-0.01em;line-height:1.35;text-wrap:balance}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--ink-2)}
+.sub,.note{font-size:14px;color:var(--ink-2)}
+.status{font-size:14px;color:var(--ink-2);display:flex;align-items:center;gap:8px}
+.status b{color:var(--ink);font-weight:700}
+.status .dot{width:8px;height:8px;border-radius:50%;background:var(--track);flex:none}
+.status.done .dot{background:var(--accent)}
+.warn{font-size:14px;padding:12px 14px;border-radius:12px;background:var(--pen-soft);color:var(--ink)}
+
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:15px 16px;font-size:17px;font-weight:700;background:var(--accent);color:var(--accent-ink);text-align:center}
+.btn.pen{background:var(--pen);color:var(--pen-ink)}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn:active{transform:translateY(1px)}
+.sbtn{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 12px;font-size:14px;font-weight:500}
+.sbtn.danger{border-color:var(--pen);color:var(--pen)}
+.linkbtn{border:0;background:none;padding:6px 0;font-size:14px;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;align-self:center}
+
+.field{display:flex;flex-direction:column;gap:8px}
+.lab{font-size:13px;font-weight:700;color:var(--ink-2);letter-spacing:.02em}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.segb{border:1.5px solid var(--line);background:var(--bg);border-radius:999px;padding:8px 14px;font-size:15px;font-weight:500}
+.segb small{font-size:12px;font-weight:500;opacity:.75;margin-left:4px;font-variant-numeric:tabular-nums}
+.lab-s{font-weight:500;letter-spacing:0;margin-left:6px;opacity:.85}
+.grid5{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.grid5 .segb{padding:8px 0;text-align:center;font-variant-numeric:tabular-nums}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.grid4 .segb{display:flex;flex-direction:column;align-items:center;gap:1px;padding:7px 0;border-radius:12px}
+.grid4 .segb small{margin-left:0}
+.book{--g:var(--accent);--gs:var(--accent-soft)}
+.no{font-family:var(--f-mono);font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums;align-self:center}
+.wtop .chip{font-size:11px;padding:1px 7px;align-self:center}
+.segb[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.pool{font-size:14px;color:var(--ink-2);line-height:1.6}
+.pool b{color:var(--ink)}
+
+.rev{background:var(--pen-soft);border-color:transparent;box-shadow:none}
+.rev .eyebrow{color:var(--pen)}
+.pen-n{color:var(--pen);font-variant-numeric:tabular-nums}
+
+/* category tint */
+.root{--g:var(--root);--gs:var(--root-soft)}
+.image{--g:var(--image);--gs:var(--image-soft)}
+.multi{--g:var(--multi);--gs:var(--multi-soft)}
+.pair{--g:var(--pair);--gs:var(--pair-soft)}
+.chip{font-size:12px;font-weight:700;padding:3px 9px;border-radius:6px;background:var(--gs);color:var(--g)}
+.hint{padding:10px 12px;border-radius:10px;background:var(--gs);font-size:14.5px;line-height:1.65;color:var(--ink)}
+.hint-l{display:block;font-size:11.5px;font-weight:700;letter-spacing:.04em;color:var(--g);margin-bottom:2px}
+
+/* red-pen marks */
+.ringed{position:relative;display:inline-grid;place-items:center}
+.mk{position:absolute;pointer-events:none;overflow:visible;fill:none;stroke:var(--pen);stroke-linecap:round;stroke-linejoin:round}
+.ringed>.mk{top:-8px;left:-8px;width:calc(100% + 16px);height:calc(100% + 16px);stroke-width:3}
+.mk path{stroke-dasharray:1;stroke-dashoffset:0;animation:draw .42s ease-out both}
+.mk.wide{top:-9px;left:-14px;width:calc(100% + 28px);height:calc(100% + 18px);stroke-width:2.5;animation:reveal .45s ease-out both}
+.mk.wide path{stroke-dasharray:none;animation:none}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes reveal{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+
+/* quiz */
+.qbar{display:flex;align-items:center;gap:12px;min-height:40px}
+.prog{flex:1;height:6px;border-radius:3px;background:var(--track);overflow:hidden}
+.prog span{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .3s ease}
+.qcount{min-width:4em;text-align:right;font-size:14px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.quitask{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:12px;background:var(--pen-soft)}
+.quitask .row{display:flex;gap:8px;justify-content:flex-end}
+
+.qcard{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px 18px 24px;display:flex;flex-direction:column;gap:18px;box-shadow:var(--shadow)}
+.chiprow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dayl{font-size:12px;color:var(--ink-2);font-weight:500}
+.ask{font-size:14px;color:var(--ink-2);margin-bottom:-8px}
+.hw{display:flex;flex-direction:column;gap:2px}
+.headword{font-family:var(--f-word);font-size:46px;font-weight:600;line-height:1.1;letter-spacing:-0.01em;overflow-wrap:anywhere}
+.ipa{font-family:var(--f-word);font-size:16px;color:var(--ink-2)}
+.mprompt{font-size:24px;font-weight:700;line-height:1.4;text-wrap:balance}
+
+.opts{display:grid;gap:10px}
+.opt{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:11px 14px;text-align:left;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);font-size:16px;line-height:1.45}
+.opt:not(:disabled):hover{border-color:var(--ink-2)}
+.opt .num{flex:none;width:26px;height:26px;font-size:19px;color:var(--ink-2)}
+.opt .otx{min-width:0}
+.opt.right{border-color:var(--accent);background:var(--accent-soft)}
+.opt.right .num{color:var(--ink)}
+.opt.wrong{color:var(--ink-2)}
+.opt:disabled:not(.right):not(.wrong){opacity:.6}
+
+.tiles{display:grid;grid-template-columns:repeat(var(--n),minmax(0,38px));justify-content:center;gap:5px}
+.tile{aspect-ratio:1/1.2;display:grid;place-items:center;font-family:var(--f-mono);font-size:clamp(15px,5.2vw,22px);font-weight:600;border-bottom:2.5px solid var(--line);color:var(--ink)}
+.tile.ghost{color:var(--ink-2);opacity:.5}
+.tile.hinted{color:var(--accent);opacity:.75}
+.hintline{text-align:center;font-size:14px;color:var(--ink-2)}
+.hintline span{font-family:var(--f-mono);font-size:17px;font-weight:600;color:var(--accent);letter-spacing:.04em;margin-left:6px}
+.tag{font-size:11px;font-weight:700;color:var(--accent);border:1px solid var(--accent);border-radius:5px;padding:0 5px;align-self:center}
+.tile.cur{border-bottom-color:var(--accent)}
+.tile.over{color:var(--pen);border-bottom-color:var(--pen)}
+.len{text-align:center;font-size:14px;color:var(--ink-2)}
+.len b{font-family:var(--f-mono);color:var(--ink)}
+.spell{display:flex;gap:8px}
+#spellIn,#gIn{flex:1;min-width:0;font-family:var(--f-mono);font-size:22px;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink)}
+#spellIn:focus,#gIn:focus{outline:none;border-color:var(--accent)}
+.spell .btn{width:auto;flex:none;padding:0 20px}
+.imewarn{font-size:14px;color:var(--pen);text-align:center}
+
+.sres{display:flex;flex-direction:column;gap:12px;align-items:flex-start;padding:4px 0}
+.sres p{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.lbl{font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--ink-2);min-width:2.6em}
+.sword{position:relative;display:inline-block;font-family:var(--f-mono);font-size:26px;font-weight:600;letter-spacing:.05em}
+.sword .miss{color:var(--pen);text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:5px}
+.given{position:relative;display:inline-block;font-family:var(--f-mono);font-size:20px;color:var(--ink-2)}
+.given.empty{font-family:var(--f-ui);font-size:15px}
+
+.fb{border-top:1.5px dashed var(--line);padding-top:16px;display:flex;flex-direction:column;gap:10px}
+.fb-h{font-size:15px;font-weight:700}
+.fb-h.ok{color:var(--accent)}
+.fb-h.no{color:var(--pen)}
+.fb-h.skip{color:var(--ink-2)}
+.oops{align-self:flex-start;padding-top:2px}
+.fb-w{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px}
+.fb-w b{font-family:var(--f-word);font-size:22px;font-weight:600}
+.fb-m{font-size:15px}
+
+#nextbar{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--bg);border-top:1px solid var(--line);
+  padding-top:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.nb-in{max-width:480px;margin:0 auto}
+
+/* listening */
+.spk{flex:none;display:inline-grid;place-items:center;width:36px;height:36px;padding:0;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);color:var(--accent)}
+.spk svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.spk:active{background:var(--accent-soft)}
+.spk.big{width:76px;height:76px;border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.spk.big svg{width:34px;height:34px}
+.hwrow{display:flex;align-items:center;gap:14px}
+.listen{display:flex;align-items:center;justify-content:center;gap:14px;padding:4px 0}
+.lmean{text-align:center;font-size:16px;color:var(--ink-2)}
+.lmean b{color:var(--ink);font-weight:700}
+.fb-w .spk{width:32px;height:32px;align-self:center}
+.wtop .spk{width:30px;height:30px;margin-left:auto;align-self:center}
+.wtop .spk svg{width:15px;height:15px}
+.sbtn[aria-pressed="false"]{color:var(--ink-2)}
+
+/* result */
+.res{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:16px 0 4px}
+.score{position:relative;display:inline-flex;align-items:baseline;gap:8px;font-family:var(--f-word);padding:0 6px}
+.sc-n{font-size:76px;font-weight:600;line-height:1;color:var(--pen);font-variant-numeric:tabular-nums}
+.sc-d{font-size:28px;color:var(--ink-2)}
+.res-msg{font-size:16px;line-height:1.6;max-width:30ch}
+.sh{font-size:16px;font-weight:700}
+.wlist{display:flex;flex-direction:column;gap:14px}
+.wlist li{display:flex;flex-direction:column;gap:8px;padding-bottom:14px;border-bottom:1px dashed var(--line)}
+.wlist li:last-child{border-bottom:0;padding-bottom:0}
+.actions{display:flex;flex-direction:column;gap:10px}
+.copyfb textarea{width:100%;font:inherit;font-size:14px;padding:10px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);resize:vertical}
+
+/* words */
+.wtools{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.gsec{display:flex;flex-direction:column;gap:10px}
+.gh{align-self:flex-start;font-size:14px;font-weight:700;padding:5px 12px;border-radius:8px;background:var(--g);color:var(--surface)}
+.gh small{font-weight:500;opacity:.8;margin-left:4px}
+.wl{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.wrow{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.wrow:last-child{border-bottom:0}
+.wtop{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.ww{font-family:var(--f-word);font-size:20px;font-weight:600}
+.wtop .ipa{font-size:14px}
+.rv{font-size:11px;font-weight:700;color:var(--pen);border:1px solid var(--pen);border-radius:5px;padding:0 5px;align-self:center}
+.wm{font-size:15px;font-weight:500}
+.wh{font-size:13.5px;color:var(--ink-2);line-height:1.6}
+.cover .wrow{cursor:pointer}
+.cover .wrow:not(.show) .wm{color:transparent;background:var(--track);border-radius:5px;user-select:none}
+.cover .wrow:not(.show) .wh{display:none}
+
+/* log */
+.strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.cell{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 6px;border-radius:10px;background:var(--surface);border:1px solid var(--line)}
+.cell.today{border:2px solid var(--accent)}
+.cell .wd{font-size:11px;color:var(--ink-2)}
+.cell .dn{width:28px;height:28px;font-weight:600;font-variant-numeric:tabular-nums}
+.cell .dn .mk path{animation:none}
+.cell .cnt{font-size:11px;color:var(--pen);min-height:1.5em;font-weight:700}
+.kpis{display:flex;gap:18px;flex-wrap:wrap;font-size:14px;color:var(--ink-2)}
+.kpis b{font-size:20px;color:var(--ink);margin-right:2px;font-variant-numeric:tabular-nums}
+.mrow{display:flex;flex-direction:column;gap:6px}
+.mtop{display:flex;justify-content:space-between;gap:10px;font-size:14px}
+.mtop b{font-weight:700}
+.mtop span{color:var(--ink-2);font-variant-numeric:tabular-nums}
+.mbar{height:8px;border-radius:4px;background:var(--track);overflow:hidden}
+.mbar span{display:block;height:100%;background:var(--accent)}
+.msub{font-size:13px;color:var(--ink-2)}
+.dgroup{display:flex;flex-direction:column;gap:6px}
+.dhead{font-size:13px;font-weight:700;color:var(--ink-2)}
+.srow{display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;align-items:baseline;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.srow .t{font-size:13px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.srow .l{font-size:15px;min-width:0}
+.srow .s{font-weight:700;font-variant-numeric:tabular-nums}
+.srow .s.full{color:var(--pen)}
+.srow .w{grid-column:1/-1;font-size:13px;color:var(--ink-2)}
+.srow .w span{font-family:var(--f-mono);color:var(--pen)}
+.empty{padding:28px 16px;text-align:center;color:var(--ink-2);font-size:15px;background:var(--surface);border:1.5px dashed var(--line);border-radius:14px}
+.foot{font-size:13px;color:var(--ink-2);line-height:1.6}
+
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:6;max-width:calc(100% - 32px);
+  background:var(--ink);color:var(--bg);font-size:14px;padding:10px 16px;border-radius:999px;box-shadow:var(--shadow)}
+
+/* review tidy */
+.rev-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.tidy{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:12px;background:var(--surface);border:1px solid var(--line)}
+.tidy-q{font-size:15px;font-weight:700}
+.btn small{display:block;font-size:12.5px;font-weight:500;opacity:.85;margin-top:2px}
+.linkbtn.inline{display:inline;padding:0 0 0 8px;font-size:inherit;color:var(--ink-2)}
+
+/* game: sticky score board on top, question card under it */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.board{position:sticky;top:env(safe-area-inset-top,0px);z-index:4;display:flex;flex-direction:column;gap:6px;padding-block:6px 10px;background:var(--bg)}
+.prow{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:10px;padding:9px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
+.av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:14px;font-weight:700;background:var(--accent);color:var(--accent-ink)}
+.prow.op .av{background:var(--multi);color:var(--surface)}
+.pmid{display:flex;flex-direction:column;gap:6px;min-width:0}
+.pname{display:flex;align-items:baseline;gap:8px;font-size:14px;font-weight:700;min-width:0}
+.pname .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pstat{flex:none;font-size:12px;font-weight:500;color:var(--ink-2)}
+.pstat.good{color:var(--accent);font-weight:700}
+.pstat.bad{color:var(--pen)}
+.pbar{height:8px;border-radius:4px;background:var(--track);overflow:hidden}
+.pbar span{display:block;width:0;height:100%;border-radius:4px;background:var(--accent);transition:width .35s ease}
+.prow.op .pbar span{background:var(--multi)}
+.pcnt{position:relative;min-width:3.4em;text-align:right;font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+.pcnt small{font-size:13px;font-weight:500;color:var(--ink-2);margin-left:1px}
+.pop{position:absolute;right:0;top:-12px;font-size:13px;font-weight:700;color:var(--accent);pointer-events:none;animation:pop .9s ease-out forwards}
+.prow.op .pop{color:var(--multi)}
+@keyframes pop{from{opacity:1;transform:translateY(6px)}to{opacity:0;transform:translateY(-10px)}}
+.gnum{font-family:var(--f-word);font-size:64px;font-weight:600;line-height:1.1;color:var(--pen);text-align:center}
+.gfb{min-height:1.6em;font-size:16px;font-weight:700}
+.gfb.ok{color:var(--accent)}
+.gfb.no{color:var(--pen)}
+.gfb b{font-family:var(--f-mono);font-size:19px;letter-spacing:.04em}
+.gfoot{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.gwin{position:relative;display:inline-block;padding:0 12px;font-size:40px;font-weight:700;line-height:1.3}
+.gwin.win{color:var(--pen)}
+.gscore{display:flex;align-items:baseline;gap:12px;font-size:16px;color:var(--ink-2)}
+.gscore b{font-size:30px;color:var(--ink);font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){.pop{display:none}.pbar span{transition:none}}
+
+@media (prefers-reduced-motion:reduce){
+  .mk path,.mk.wide{animation:none}
+  .prog span{transition:none}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="bname">단어장</p>
+      <p class="bdate" id="bdate"></p>
+    </div>
+    <p class="streak" id="streak" hidden></p>
+  </header>
+  <nav class="tabs" id="tabs" role="tablist" aria-label="화면">
+    <button class="tab" role="tab" data-act="tab" data-v="home" aria-selected="true">테스트</button>
+    <button class="tab" role="tab" data-act="tab" data-v="words" aria-selected="false">단어 보기</button>
+  </nav>
+  <main>
+    <section id="v-home"></section>
+    <section id="v-words" hidden></section>
+    <section id="v-quiz" hidden></section>
+    <section id="v-result" hidden></section>
+    <section id="v-game" hidden></section>
+  </main>
+</div>
+<div id="nextbar" hidden><div class="nb-in"><button class="btn" id="nextBtn" data-act="next">다음</button></div></div>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+/* ---------- 단어 데이터 (Day별 단어 지도 그대로) ---------- */
+const WORDS=[
+/* Day 21 · 동물과 식물 */
+{d:21,g:'root',w:'species',p:'spí:ʃi:z',m:'종, 종류',h:'spec(보다) → 겉모습을 보고 나눈 무리 → 종 (Day10 perspective의 spect, 보다!) 하나여도 species!'},
+{d:21,g:'root',w:'certain',p:'sə́:rtn',m:'특정한, 확실한',h:'cert(딱 정하다) → 딱 정해진 → 특정한·확실한 · certainly (↔ uncertain)'},
+{d:21,g:'root',w:'predator',p:'prédətər',m:'포식자, 포식 동물, 약탈자',h:'predat(먹이를 잡다) + or(사람·것) → 잡아먹는 것 → 포식자 (↔ Day13 prey!)'},
+{d:21,g:'root',w:'surface',p:'sə́:rfis',m:'표면, 겉, 외관',h:'sur(위) + face(얼굴) → 위쪽 얼굴 → 표면 (소리는 ‘피스’, 철자는 face!)'},
+{d:21,g:'root',w:'location',p:'loukéiʃən',m:'위치, 소재, 장소',h:'loc(장소) + ation → 놓인 곳 → 위치 · locate'},
+{d:21,g:'root',w:'attract',p:'ətrǽkt',m:'유혹하다, 끌어들이다',h:'at(~쪽으로) + tract(끌다) → 내 쪽으로 끌어당김 → 유혹 (Day16 abstract의 tract, 끌다!)'},
+{d:21,g:'root',w:'automatic',p:'ɔ̀:təmǽtik',m:'자동의, 기계적인',h:'auto(스스로) + mat(움직이는) → 스스로 움직이는 → 자동 (↔ Day1 manual!)'},
+{d:21,g:'root',w:'exchange',p:'ikstʃéindʒ',m:'교환하다, 주고받다; 교환',h:'ex(서로) + change(바꾸다) → 서로 바꿔 줌 → 교환'},
+{d:21,g:'root',w:'contain',p:'kəntéin',m:'포함하다, 함유하다, 억누르다',h:'con(함께) + tain(붙잡다) → 안에 붙잡아 담음 → 포함 · container (Day7 obtain의 tain!)'},
+{d:21,g:'root',w:'exceed',p:'iksí:d',m:'넘다, 초과하다',h:'ex(밖) + ceed(가다) → 정해진 범위 밖으로 감 → 초과 (Day14 succeed의 ceed, 가다!)'},
+{d:21,g:'root',w:'diameter',p:'daiǽmətər',m:'지름, 직경',h:'dia(가로질러) + meter(재다) → 원을 가로질러 잰 길이 → 지름'},
+{d:21,g:'root',w:'concentrate',p:'ká:nsəntrèit',m:'집중하다, 전념하다; 농축물, 응축물',h:'con(함께) + centr(중심) → 중심으로 모음 → 집중 · concentration'},
+{d:21,g:'image',w:'wild',p:'waild',m:'야생의, 자연 그대로의; 황무지, 야생',h:'와일드=야생 (↔ tamed)'},
+{d:21,g:'image',w:'bark',p:'ba:rk',m:'(개가) 짖다',h:'바크! 멍멍'},
+{d:21,g:'image',w:'nest',p:'nest',m:'둥지, 보금자리; 둥지를 틀다',h:'네스트=새 둥지'},
+{d:21,g:'image',w:'greet',p:'gri:t',m:'인사하다, 환영하다',h:'그리트 · greeting=인사말'},
+{d:21,g:'image',w:'seed',p:'si:d',m:'씨(앗), 종자',h:'시드=씨앗'},
+{d:21,g:'image',w:'shape',p:'ʃeip',m:'모양, 형태; 형성하다, 모양으로 만들다',h:'셰이프=모양'},
+{d:21,g:'image',w:'fierce',p:'fiərs',m:'사나운, 치열한',h:'피어스 — i·e 순서 주의!'},
+{d:21,g:'image',w:'ripe',p:'raip',m:'익은, 숙성한',h:'라이프=잘 익은 · ripen(익다)'},
+{d:21,g:'image',w:'lay',p:'lei',m:'(알을) 낳다',h:'레이=알 낳기'},
+{d:21,g:'image',w:'male',p:'meil',m:'수컷의, 남자의; 수컷, 남자',h:'메일=수컷 (↔ female)'},
+{d:21,g:'image',w:'foster',p:'fɔ́:stər',m:'기르다, 조성하다',h:'포스터=기르다'},
+{d:21,g:'image',w:'engage',p:'ingéidʒ',m:'참여하다, 관여하다, 종사하다',h:'en+gage(약속)=약속하고 뛰어듦 · engagement'},
+{d:21,g:'image',w:'poison',p:'pɔ́izn',m:'독, 독약; 독살하다',h:'포이즌=독 · poisonous'},
+{d:21,g:'image',w:'weigh',p:'wei',m:'(무게가) 나가다, 저울에 달다',h:'웨이 — g·h는 소리 안 남! · weight'},
+{d:21,g:'image',w:'role',p:'roul',m:'역할, 배역',h:'롤모델=본보기 역할'},
+{d:21,g:'image',w:'overcome',p:'òuvərkʌ́m',m:'극복하다, 이기다',h:'over(넘어)+come(오다) (Day14 conquer와 뜻 짝!)'},
+{d:21,g:'image',w:'tiny',p:'táini',m:'작은, 조그마한',h:'타이니=아주 작은 (↔ huge)'},
+{d:21,g:'image',w:'bury',p:'béri',m:'파묻다, 매장하다',h:'소리는 ‘베리’, 철자는 b·u·r·y!'},
+{d:21,g:'image',w:'stem',p:'stem',m:'줄기, 대; 비롯되다, 유래하다',h:'스템=꽃줄기'},
+{d:21,g:'image',w:'fascinate',p:'fǽsənèit',m:'매료하다, 마음을 사로잡다',h:'패서네이트 — sc 붙여 쓰기! (Day15 discipline처럼)'},
+{d:21,g:'image',w:'furthermore',p:'fə́:rðərmɔ̀:r',m:'게다가, 뿐만 아니라',h:'further+more 두 덩어리!'},
+{d:21,g:'multi',w:'store',p:'stɔ:r',m:'상점, 가게; 저장하다, 비축하다',h:'상점·가게 → (물건을 상점에 두다) 저장하다·비축하다 · storage (Day13 restore의 store!)'},
+{d:21,g:'multi',w:'general',p:'dʒénərəl',m:'일반적인, 보통의; 장군',h:'일반적인·보통의 // (군대 전체를 이끄는 사람) 장군 · generally'},
+{d:21,g:'pair',w:'scene',p:'si:n',m:'현장, 장면, 경치',h:'sceNE=장면(씬) / sceNT=향기(센트) — 둘 다 c는 소리 안 남!'},
+{d:21,g:'pair',w:'scent',p:'sent',m:'향기, 냄새; 향기가 나다',h:'sceNE=장면(씬) / sceNT=향기(센트) — 둘 다 c는 소리 안 남!'},
+{d:21,g:'pair',w:'trail',p:'treil',m:'오솔길, 자취, 흔적',h:'trai+L=오솔길 / trai+T=특징 / tri+AL=시도 — ai와 ia 순서 주의!'},
+{d:21,g:'pair',w:'trait',p:'treit',m:'특징, 특색',h:'trai+L=오솔길 / trai+T=특징 / tri+AL=시도 — ai와 ia 순서 주의!'},
+{d:21,g:'pair',w:'trial',p:'tráiəl',m:'시도, 도전, 재판',h:'trai+L=오솔길 / trai+T=특징 / tri+AL=시도 — ai와 ia 순서 주의!'},
+/* Day 22 · 자연과 생태계 */
+{d:22,g:'root',w:'ecosystem',p:'ì:kousístəm',m:'생태계',h:'eco(집·환경) + system(체계) → 생물이 사는 집 전체 → 생태계 (같은 Day eco-friendly의 eco!)'},
+{d:22,g:'root',w:'creature',p:'krí:tʃər',m:'생명체, 생물, 창조물',h:'creat(만들다) + ure → 만들어진 것 → 생명체 · create'},
+{d:22,g:'root',w:'habitat',p:'hǽbitæ̀t',m:'서식지, 거주지',h:'habit(살다·머물다) → 사는 곳 → 서식지 · habitable'},
+{d:22,g:'root',w:'maintain',p:'meintéin',m:'유지하다, 지키다, 부양하다',h:'main(손) + tain(붙잡다) → 손에 꼭 붙잡고 있음 → 유지 (Day21 contain의 tain!)'},
+{d:22,g:'root',w:'react',p:'riǽkt',m:'반응하다, 반작용하다',h:'re(되받아) + act(행동) → 되받아 행동함 → 반응 · reaction (Day19 interact의 act!)'},
+{d:22,g:'root',w:'exist',p:'igzíst',m:'존재하다, 살아가다, 있다',h:'ex(밖) + ist(서다) → 밖에 나와 서 있음 → 존재 · existence (Day13 persist의 sist, 서다!)'},
+{d:22,g:'root',w:'observe',p:'əbzə́:rv',m:'관찰하다, 목격하다, 지키다',h:'ob(향하여) + serve(지키다) → 지켜보다 → 관찰 · observation (Day16 preserve의 serv!)'},
+{d:22,g:'root',w:'portion',p:'pɔ́:rʃən',m:'일부, 부분, 1인분; 나누다, 분배하다',h:'port(나눈 몫) + ion → 일부 (Day12 particular의 part와 한 뿌리, 부분!)'},
+{d:22,g:'root',w:'tension',p:'ténʃən',m:'긴장(감), 갈등',h:'tens(팽팽히 당기다) + ion → 팽팽함 → 긴장 · tense (Day16 extensive의 tens!)'},
+{d:22,g:'root',w:'migrate',p:'máigreit',m:'이동하다, 이주하다',h:'migr(옮기다) + ate → 옮겨 가다 → 이동 · migration'},
+{d:22,g:'root',w:'expose',p:'ikspóuz',m:'드러내다, 노출시키다, 폭로하다',h:'ex(밖) + pos(놓다) → 밖에 내놓음 → 드러내다 · exposure (Day18 positive의 pos, 놓다!)'},
+{d:22,g:'root',w:'absorb',p:'æbsɔ́:rb',m:'흡수하다, 받아들이다',h:'ab(떨어져) + sorb(빨아들이다) → 빨아들여 가져감 → 흡수 · absorption — b로 끝!'},
+{d:22,g:'root',w:'incredible',p:'inkrédəbl',m:'놀라운, 훌륭한',h:'in(아닌) + cred(믿다) + ible → 믿을 수 없을 만큼 → 놀라운 (Day2 confident의 fid와 뜻 짝, 믿다!)'},
+{d:22,g:'root',w:'consist',p:'kənsíst',m:'구성되다, 이루어지다',h:'con(함께) + sist(서다) → 함께 서서 이룸 → 구성되다 (Day12 consistent와 한 뿌리!)'},
+{d:22,g:'root',w:'diminish',p:'dimíniʃ',m:'줄어들다, 약해지다',h:'di(떨어져) + min(작은) + ish → 작게 줄어듦 (Day2 minimum의 min, 작은!)'},
+{d:22,g:'image',w:'desert',p:'dézərt',m:'사막, 불모지; 버리다, 포기하다',h:'데저트=사막 · deserted (사막은 s 하나!)'},
+{d:22,g:'image',w:'mature',p:'mətjúər',m:'다 자란, 어른스러운; 익다, 성숙하다',h:'머추어=다 자란 (Day21 ripe와 뜻 짝!)'},
+{d:22,g:'image',w:'tide',p:'taid',m:'조수, 조류, 흐름',h:'타이드=밀물·썰물'},
+{d:22,g:'image',w:'balance',p:'bǽləns',m:'균형, 평형 상태, 잔액; 균형을 유지하다',h:'밸런스=균형 — bal·ance (a 두 번!)'},
+{d:22,g:'image',w:'huge',p:'hju:dʒ',m:'거대한, 막대한',h:'휴즈=거대한 (↔ Day21 tiny!)'},
+{d:22,g:'image',w:'pile',p:'pail',m:'쌓다, 포개다; 쌓아 올린 것, 더미',h:'파일=쌓인 더미 (Day13 stack과 뜻 짝!)'},
+{d:22,g:'image',w:'shade',p:'ʃeid',m:'그늘, 빛 가리개',h:'셰이드=그늘 (Day21 shape와 한 글자 차이!)'},
+{d:22,g:'image',w:'element',p:'éləmənt',m:'요소, 성분, 원소',h:'엘리먼트 — e·le·ment (Day20 component와 뜻 짝!)'},
+{d:22,g:'image',w:'layer',p:'léiər',m:'층, 막, 단계',h:'레이어=층 · lay+er'},
+{d:22,g:'image',w:'horizon',p:'həráizn',m:'수평선, 지평선',h:'호라이즌=수평선 · horizontal'},
+{d:22,g:'image',w:'reason',p:'rí:zn',m:'원인, 이유',h:'리즌=이유 — ea 주의!'},
+{d:22,g:'image',w:'herd',p:'hə:rd',m:'무리, 떼; (짐승을) 몰다',h:'허드=짐승 무리'},
+{d:22,g:'image',w:'filter',p:'fíltər',m:'여과하다, 거르다; 여과 장치, 필터',h:'필터=거르는 것'},
+{d:22,g:'image',w:'eco-friendly',p:'í:koufrèndli',m:'친환경의, 환경친화적인',h:'eco(환경)+friendly(친한) — 하이픈(-) 꼭!'},
+{d:22,g:'image',w:'deadly',p:'dédli',m:'치명적인, 극도의',h:'dead+ly — -ly인데 형용사!'},
+{d:22,g:'image',w:'shelter',p:'ʃéltər',m:'보호소, 대피, 주거지; 보호하다, 쉴 곳을 제공하다',h:'셸터=보호소'},
+{d:22,g:'image',w:'peak',p:'pi:k',m:'(산의) 정상, 봉우리, 정점',h:'피크=꼭대기 (ea!)'},
+{d:22,g:'image',w:'weed',p:'wi:d',m:'잡초; 잡초를 제거하다',h:'위드=잡초 (Day21 seed와 첫 글자만 달라!)'},
+{d:22,g:'image',w:'scare',p:'skɛər',m:'겁먹게 하다, 무서워하다; 두려움, 공포',h:'스케어=겁주다 · scared'},
+{d:22,g:'multi',w:'block',p:'blɑ:k',m:'덩어리, 토막, 블록; 막다, 차단하다',h:'덩어리·토막·블록 → (덩어리로 막다) 막다·차단하다'},
+{d:22,g:'multi',w:'yield',p:'ji:ld',m:'굴복하다, 양보하다; 내다, 산출하다; 수확(량), 생산량',h:'굴복하다·양보하다 // 내다·산출하다 → (산출해 낸 농작물) 수확(량)·생산량'},
+{d:22,g:'pair',w:'grand',p:'grænd',m:'웅장한, 위대한',h:'granD=웅장한(그랜드 피아노) / granT=주다·보조금'},
+{d:22,g:'pair',w:'grant',p:'grænt',m:'주다, 인정하다, 승인하다; 보조금',h:'granD=웅장한(그랜드 피아노) / granT=주다·보조금'},
+{d:22,g:'pair',w:'access',p:'ǽkses',m:'접근하다, 입수하다; 접근, 접속, 입장',h:'Access=접근(A) / EXcess=넘침(ex=밖으로, Day21 exceed의 ex!)'},
+{d:22,g:'pair',w:'excess',p:'iksés',m:'여분의, 초과한; 과잉, 지나침',h:'Access=접근(A) / EXcess=넘침(ex=밖으로, Day21 exceed의 ex!)'},
+/* Day 23 · 기후와 지리 */
+{d:23,g:'root',w:'geography',p:'dʒiɑ́:grəfi',m:'지리학, 지리, 지형',h:'geo(땅) + graph(그리다) → 땅을 그린 것 → 지리학 (Day2 photograph의 graph!)'},
+{d:23,g:'root',w:'influence',p:'ínfluəns',m:'영향을 미치다; 영향, 영향력',h:'in(안으로) + flu(흐르다) → 안으로 흘러듦 → 영향 · influential (Day16 fluid의 flu, 흐르다!)'},
+{d:23,g:'root',w:'predict',p:'pridíkt',m:'예측하다, 예보하다',h:'pre(미리) + dict(말하다) → 미리 말함 → 예측 · prediction (Day10 contradict의 dict!)'},
+{d:23,g:'root',w:'correct',p:'kərékt',m:'정확한, 맞는; 바로잡다, 수정하다',h:'cor(완전히) + rect(바른) → 똑바로 맞춤 → 정확한 · correction (Day17 direct의 rect!)'},
+{d:23,g:'root',w:'estimate',p:'éstəmèit / 명 éstəmət',m:'예상하다, 추정하다, 평가하다; 견적(서), 평가',h:'estim(값을 매기다) + ate → 값을 어림함 → 추정 · estimation'},
+{d:23,g:'root',w:'incident',p:'ínsədənt',m:'사건, 일',h:'in(위에) + cid(떨어지다) → 갑자기 떨어진 일 → 사건'},
+{d:23,g:'root',w:'continent',p:'kɑ́:ntənənt',m:'대륙, 육지',h:'con(함께) + tin(이어지다) → 하나로 이어진 땅 → 대륙 (Day5 continuous의 tin!)'},
+{d:23,g:'root',w:'tremendous',p:'triméndəs',m:'엄청난, 대단한',h:'trem(떨다) + endous → 떨릴 만큼 → 엄청난 (Day18 tremble의 trem, 떨다!)'},
+{d:23,g:'root',w:'territory',p:'térətɔ̀:ri',m:'영토, 영역',h:'terr(땅) + itory(곳) → 다스리는 땅 → 영토 — r 두 개!'},
+{d:23,g:'root',w:'forecast',p:'fɔ́:rkæ̀st',m:'예보, 예측; 예상하다, 예보하다',h:'fore(미리) + cast(던지다) → 앞날을 내다봐 던짐 → 예보 (Day12 cast!)'},
+{d:23,g:'image',w:'climate',p:'kláimit',m:'기후, 분위기',h:'클라이밋=기후 — climate change'},
+{d:23,g:'image',w:'landscape',p:'lǽndskèip',m:'풍경, 경치, 경관',h:'land(땅)+scape(경치)=풍경'},
+{d:23,g:'image',w:'storm',p:'stɔ:rm',m:'폭풍, 폭풍우',h:'스톰=폭풍'},
+{d:23,g:'image',w:'average',p:'ǽvəridʒ',m:'평균의, 보통의; 평균, 표준',h:'애버리지=평균 — a·ver·age'},
+{d:23,g:'image',w:'drown',p:'draun',m:'익사시키다, 침수시키다',h:'드라운=물에 빠짐'},
+{d:23,g:'image',w:'happen',p:'hǽpən',m:'발생하다, 일어나다',h:'해픈=일어나다 (Day18 perhaps의 hap!)'},
+{d:23,g:'image',w:'rough',p:'rʌf',m:'거친, 난폭한, 대강의',h:'러프 — ough를 ‘프’로!'},
+{d:23,g:'image',w:'valley',p:'vǽli',m:'계곡, 골짜기',h:'밸리=골짜기 — l 두 개!'},
+{d:23,g:'image',w:'damage',p:'dǽmidʒ',m:'피해, 손상, 배상금; 손해를 입히다, 훼손하다',h:'대미지=피해'},
+{d:23,g:'image',w:'lack',p:'læk',m:'부족, 결핍; 부족하다, 모자라다',h:'랙=부족 (Day24 shortage와 뜻 짝!)'},
+{d:23,g:'image',w:'aware',p:'əwέər',m:'알고 있는, 깨달은',h:'어웨어=알고 있는 · awareness'},
+{d:23,g:'image',w:'earthquake',p:'ə́:rθkwèik',m:'지진',h:'earth(땅)+quake(흔들림)=지진'},
+{d:23,g:'image',w:'due',p:'dju:',m:'~으로 인한, ~ 때문인, 예정된',h:'듀=~ 때문인 · due to'},
+{d:23,g:'image',w:'shift',p:'ʃift',m:'바뀌다, 옮기다; 변화, 교체',h:'시프트 키=바꿔 치는 키'},
+{d:23,g:'image',w:'narrow',p:'nǽrou',m:'좁은, 편협한; 좁히다, 한정하다',h:'내로우=좁은 — r 두 개!'},
+{d:23,g:'image',w:'drought',p:'draut',m:'가뭄, 건조',h:'드라우트=가뭄 — gh는 소리 안 남!'},
+{d:23,g:'image',w:'boundary',p:'báundəri',m:'경계(선), 한계',h:'bound(경계)+ary=경계선'},
+{d:23,g:'image',w:'alarming',p:'əlɑ́:rmiŋ',m:'놀라운',h:'알람=경보 → 놀라운 · alarm'},
+{d:23,g:'image',w:'harsh',p:'hɑ:rʃ',m:'혹독한, 가혹한, 거친',h:'하쉬=혹독한'},
+{d:23,g:'image',w:'cease',p:'si:s',m:'그치다, 중지하다',h:'시스 — 첫 글자는 c!'},
+{d:23,g:'image',w:'spoil',p:'spɔil',m:'상하다, 망치다, 버릇없게 키우다',h:'스포일러=재미 망치기'},
+{d:23,g:'image',w:'steep',p:'sti:p',m:'가파른, 비탈진, 급격한',h:'스티프=가파른 — ee!'},
+{d:23,g:'image',w:'split',p:'split',m:'나뉘다, 쪼개다; 쪼개진, 갈라진',h:'스플릿=쪼개기'},
+{d:23,g:'image',w:'flash',p:'flæʃ',m:'섬광, 번쩍임; 번쩍이다, 비치다',h:'플래시=번쩍'},
+{d:23,g:'multi',w:'level',p:'lévəl',m:'수준, 위치; (수평)면; 수평의, 평평한',h:'(가치·정도 등의) 수준·위치 // (수평)면 → (수평면처럼) 수평의·평평한'},
+{d:23,g:'multi',w:'deposit',p:'dipɑ́:zit',m:'퇴적시키다; 매장량, 매장물; 예금하다; 보증금, 담보',h:'퇴적시키다 → (쌓인 것) 매장량·매장물 // 예금하다 → (예금하여 모은) 보증금·담보 (Day18 positive의 pos, 놓다!)'},
+{d:23,g:'pair',w:'effect',p:'ifékt',m:'효과, 영향, 결과',h:'Affect=Action(동사, 영향을 미치다) / Effect=End(명사, 결과)'},
+{d:23,g:'pair',w:'affect',p:'əfékt',m:'영향을 미치다, 작용하다',h:'Affect=Action(동사, 영향을 미치다) / Effect=End(명사, 결과)'},
+{d:23,g:'pair',w:'plane',p:'plein',m:'비행기, 평면; 평평한',h:'planE=비행기 / plAIn=평야 — Day13 pray/prey처럼 소리 같은 짝!'},
+{d:23,g:'pair',w:'plain',p:'plein',m:'평야, 평지; 꾸미지 않은, 무늬가 없는, 보통의',h:'planE=비행기 / plAIn=평야 — Day13 pray/prey처럼 소리 같은 짝!'},
+/* Day 24 · 자원과 에너지 */
+{d:24,g:'root',w:'resource',p:'rí:sɔ:rs',m:'자원, 재원, 수단',h:'re(다시) + source(솟아남) → 다시 솟아나는 것 → 자원 (같은 Day source가 쏙!)'},
+{d:24,g:'root',w:'supply',p:'səplái',m:'공급(량), 배급; 공급하다, 지급하다',h:'sup(아래) + ply(채우다) → 밑에서 채워 줌 → 공급 — p 두 개!'},
+{d:24,g:'root',w:'explanation',p:'èksplənéiʃən',m:'설명, 해석, 해명',h:'ex(밖) + plan(평평하게) → 펼쳐 보여줌 → 설명 · explain (ai가 a로!)'},
+{d:24,g:'root',w:'essential',p:'isénʃəl',m:'필수적인, 본질의',h:'ess(있다·본질) + ential → 본질에 꼭 있는 → 필수적 · essence'},
+{d:24,g:'root',w:'survive',p:'sərváiv',m:'생존하다, 견디다',h:'sur(넘어) + viv(살다) → 넘겨서 살아남음 → 생존 · survival (Day11 vivid의 viv, 살다!)'},
+{d:24,g:'root',w:'produce',p:'prədjú:s / 명 prádju:s',m:'생산하다, 제조하다; 생산품, 농산물',h:'pro(앞으로) + duce(이끌다) → 앞으로 끌어냄 → 생산 · product (Day19 reproduce와 한 가족!)'},
+{d:24,g:'root',w:'benefit',p:'bénəfit',m:'이점, 장점, 혜택; 이익을 얻다',h:'bene(좋게) + fit(만들다) → 좋게 만들어 줌 → 이점 · beneficial (Day19 efficient의 fic!)'},
+{d:24,g:'root',w:'renewable',p:'rinjú:əbl',m:'재생 가능한',h:'re(다시) + new(새로운) + able → 다시 새로 만들 수 있는 → 재생 가능한'},
+{d:24,g:'root',w:'potential',p:'pəténʃəl',m:'잠재력, 가능성; 잠재적인, 가능한',h:'pot(힘) + ential → 안에 힘을 지닌 → 잠재력 · potentially'},
+{d:24,g:'root',w:'native',p:'néitiv',m:'토착의, 원주민의, 타고난; 원주민, 현지인',h:'nat(태어나다) + ive → 태어난 곳의 → 토착의 (Day16 nature의 nat!)'},
+{d:24,g:'root',w:'ingredient',p:'ingrí:diənt',m:'구성 요소, 재료, 성분',h:'in(안) + gred(들어가다) → 안에 들어가는 것 → 재료 (Day10 aggressive의 gress와 한 뿌리!)'},
+{d:24,g:'root',w:'attribute',p:'ətríbju:t / 명 ǽtrəbju:t',m:'(~의) 결과라고 생각하다, ~의 탓으로 돌리다; 속성, 자질',h:'at(~에) + tribute(주다) → ~에게 돌려줌 → 탓으로 돌리다 (Day7 contribute의 tribute!)'},
+{d:24,g:'root',w:'appliance',p:'əpláiəns',m:'가전제품, (가정용) 기기, 장치',h:'ap + pli(쓰다·대다) + ance → 쓰는 기구 → 가전제품 (Day15 apply와 한 가족!)'},
+{d:24,g:'root',w:'aspect',p:'ǽspekt',m:'측면, 양상, 국면',h:'a(~쪽) + spect(보다) → 바라보는 면 → 측면 (Day10 perspective의 spect!)'},
+{d:24,g:'image',w:'fossil',p:'fɑ́:səl',m:'화석',h:'파슬=화석 — s 두 개!'},
+{d:24,g:'image',w:'common',p:'kɑ́:mən',m:'흔한, 공동의',h:'커먼=흔한 — m 두 개!'},
+{d:24,g:'image',w:'nuclear',p:'njú:kliər',m:'핵의, 원자력의',h:'뉴클리어=핵'},
+{d:24,g:'image',w:'material',p:'mətíəriəl',m:'재료, 물질, 자료',h:'머티리얼=재료'},
+{d:24,g:'image',w:'solve',p:'sɑ:lv',m:'해결하다, 풀다',h:'솔브=풀다 · solution (Day10 resolve의 solv!)'},
+{d:24,g:'image',w:'source',p:'sɔ:rs',m:'공급원, 원천, 출처',h:'소스=원천 (같은 Day resource 안에 쏙!)'},
+{d:24,g:'image',w:'electronic',p:'ilektrɑ́:nik',m:'전자의, 전자공학의',h:'일렉트로닉=전자'},
+{d:24,g:'image',w:'coal',p:'koul',m:'석탄',h:'콜=석탄 — oa!'},
+{d:24,g:'image',w:'vacuum',p:'vǽkjuəm',m:'진공청소기, 진공(상태); 진공청소기로 청소하다',h:'배큠=진공 — u 두 개!'},
+{d:24,g:'image',w:'treasure',p:'tréʒər',m:'보물, 귀중품; 소중히 하다',h:'트레저=보물 — ea·sure'},
+{d:24,g:'image',w:'shortage',p:'ʃɔ́:rtidʒ',m:'부족, 결핍',h:'short(모자란)+age=부족 (Day23 lack과 뜻 짝!)'},
+{d:24,g:'image',w:'grain',p:'grein',m:'곡물, 곡식, 낟알',h:'그레인=곡물 — ai!'},
+{d:24,g:'image',w:'extreme',p:'ikstrí:m',m:'극단적인, 극도의, 지나친; 극단, 극도',h:'익스트림=극한 · extremely'},
+{d:24,g:'image',w:'typical',p:'típikəl',m:'대표적인, 전형적인',h:'type(유형)+ical=대표적인'},
+{d:24,g:'image',w:'float',p:'flout',m:'떠다니다, 뜨다',h:'플로트=둥둥 (↔ Day20 sink!)'},
+{d:24,g:'image',w:'ban',p:'bæn',m:'규제, 금지, 금지법; 금지하다',h:'밴=금지'},
+{d:24,g:'image',w:'witness',p:'wítnis',m:'목격하다, 입증하다; 목격자, 증인',h:'wit+ness — s 두 개!'},
+{d:24,g:'image',w:'solar',p:'sóulər',m:'태양의, 태양열을 이용한',h:'솔라=태양 — ar로 끝!'},
+{d:24,g:'image',w:'starve',p:'stɑ:rv',m:'굶주리다, 갈망하다',h:'스타브=굶주림 · starvation'},
+{d:24,g:'multi',w:'address',p:'ǽdres / 동 ədrés',m:'주소; 연설하다; (문제를) 해결하다',h:'주소 // (사람들 앞에서) 연설하다 // (문제를 직접 대하다) 해결하다 — d 두 개, s 두 개!'},
+{d:24,g:'multi',w:'plant',p:'plænt',m:'심다; 식물, 초목; 공장',h:'심다 → (땅에 심어져 있는) 식물·초목 → (땅에 심어 설비를 갖춘) 공장'},
+{d:24,g:'pair',w:'metal',p:'métl',m:'금속; 금속의',h:'meNtal=마음(Day1 mind처럼 n이 있음) / metal=금속'},
+{d:24,g:'pair',w:'mental',p:'méntl',m:'정신적인, 마음의',h:'meNtal=마음(Day1 mind처럼 n이 있음) / metal=금속'},
+{d:24,g:'pair',w:'contact',p:'kɑ́:ntækt',m:'연락하다, 접촉시키다; 연락, 접촉',h:'conTACT=연락 / conTENT=내용 / conTEXT=앞뒤 글(맥락) — 끝 세 글자!'},
+{d:24,g:'pair',w:'content',p:'kɑ́:ntent / 형 kəntént',m:'콘텐츠, 내용물, 목차; 만족하는',h:'conTACT=연락 / conTENT=내용 / conTEXT=앞뒤 글(맥락) — 끝 세 글자!'},
+{d:24,g:'pair',w:'context',p:'kɑ́:ntekst',m:'맥락, 문맥, 전후 관계',h:'conTACT=연락 / conTENT=내용 / conTEXT=앞뒤 글(맥락) — 끝 세 글자!'},
+/* Day 25 · 환경 문제 */
+{d:25,g:'root',w:'environment',p:'inváiərənmənt',m:'환경, 주위',h:'en(안에) + viron(둘레) + ment → 나를 빙 둘러싼 것 → 환경 — 소리는 약해도 environ·ment, n 꼭!'},
+{d:25,g:'root',w:'disaster',p:'dizǽstər',m:'재난, 재해, 참사',h:'dis(나쁜) + aster(별) → 별자리가 나빠서 생긴 일 → 재난 · disastrous(처참한)는 e가 빠짐!'},
+{d:25,g:'root',w:'destroy',p:'distrɔ́i',m:'파괴하다, 망치다',h:'de(아래로) + stroy(쌓다) → 쌓아 올린 것을 무너뜨림 → 파괴 · destruction(파괴)'},
+{d:25,g:'root',w:'period',p:'píəriəd',m:'기간, 시대, 마침표',h:'peri(둘레) + od(길) → 한 바퀴 도는 길 → 기간·시대 → 문장 한 바퀴의 끝 → 마침표'},
+{d:25,g:'root',w:'announce',p:'ənáuns',m:'알리다, 발표하다',h:'an(~에게) + nounce(알리다) → 사람들에게 알리다 → 발표 — n 두 개! · announcement'},
+{d:25,g:'root',w:'occur',p:'əkə́:r',m:'발생하다, 생기다',h:'oc(~쪽으로) + cur(달리다) → 일이 달려와 생김 → 발생 — c 두 개, occurrence는 r도 두 개! (Day23 happen과 뜻 짝)'},
+{d:25,g:'root',w:'protect',p:'prətékt',m:'보호하다, 막다',h:'pro(앞) + tect(덮다) → 앞을 덮어 막아 줌 → 보호 · protection'},
+{d:25,g:'root',w:'generate',p:'dʒénərèit',m:'생산하다, 발생시키다, 야기하다',h:'gener(낳다) + ate → 새로 낳아 만들어 냄 → 생산·발생 · generator(발전기) (Day21 general과 한 뿌리!)'},
+{d:25,g:'root',w:'intense',p:'inténs',m:'강렬한, 심한, 열정적인',h:'in(안으로) + tens(팽팽히 당기다) → 팽팽하게 당겨진 → 강렬한 · intensity (Day22 tension의 tens!)'},
+{d:25,g:'root',w:'amount',p:'əmáunt',m:'양, 총액',h:'a(~로) + mount(산·오르다) → 산처럼 쌓아 올린 것 → 양·총액 (Day26 mount와 한 뿌리!)'},
+{d:25,g:'root',w:'marine',p:'mərí:n',m:'해양의, 바다의',h:'mar(바다) + ine → 바다의 · submarine(잠수함) = sub(아래) + marine(바다)'},
+{d:25,g:'root',w:'permanent',p:'pə́:rmənənt',m:'영구적인, 불변의',h:'per(끝까지) + man(머무르다) + ent → 끝까지 머무는 → 영구적인 (↔ temporary 임시의)'},
+{d:25,g:'root',w:'pesticide',p:'péstisàid',m:'살충제, 농약',h:'pest(해충) + cide(죽이다) → 해충을 죽이는 것 → 살충제'},
+{d:25,g:'root',w:'alternative',p:'ɔ:ltə́:rnətiv',m:'대안, 양자택일; 대체 가능한, 대안적인',h:'alter(다른 것) → 다른 쪽을 고를 수 있는 → 대안·대체 가능한 · alternative energy(대체 에너지)'},
+{d:25,g:'root',w:'respect',p:'rispékt',m:'존중하다, 존경하다; 존경심, 경의',h:'re(다시) + spect(보다) → 다시 돌아볼 만큼 → 존중 · respectful (Day24 aspect의 spect, 보다!)'},
+{d:25,g:'root',w:'refreshing',p:'rifréʃiŋ',m:'상쾌한, 신선한, 가슴이 후련한',h:'re(다시) + fresh(신선한) + ing → 다시 신선하게 해 주는 → 상쾌한 · refreshment(다과)'},
+{d:25,g:'root',w:'responsible',p:'rispɑ́:nsəbl',m:'책임이 있는, 원인이 되는',h:'respons(응답하다) + ible → 맡은 일에 응답할 수 있는 → 책임이 있는 — able 말고 ible! · responsibility'},
+{d:25,g:'root',w:'confuse',p:'kənfjú:z',m:'혼란스럽게 하다, 혼동시키다',h:'con(함께) + fuse(붓다) → 여러 걸 한데 부어 뒤섞음 → 혼란 · confusion'},
+{d:25,g:'root',w:'separate',p:'sépərèit / 형 sépərət',m:'분리하다, 구분하다; 분리된, 각각의',h:'se(따로) + par(놓다) + ate → 따로 떼어 놓다 → 분리 — sep·A·rate, 가운데 a! (seperate 아님)'},
+{d:25,g:'root',w:'extinction',p:'ikstíŋkʃən',m:'멸종, 절멸, (권리 등의) 소멸',h:'ex(밖) + stinct(불을 끄다) → 불이 꺼져 사라짐 → 멸종 · extinct(멸종된)'},
+{d:25,g:'root',w:'superior',p:'səpíəriər',m:'더 나은, 우수한, 우세한',h:'super(위) + ior(더) → 더 위에 있는 → 우수한 (↔ inferior 열등한)'},
+{d:25,g:'root',w:'consequence',p:'kɑ́:nsəkwèns',m:'결과, 영향, 중요성',h:'con(함께) + sequ(뒤따르다) + ence → 뒤따라오는 것 → 결과 · consequently(그 결과)'},
+{d:25,g:'root',w:'interrupt',p:'ìntərʌ́pt',m:'방해하다, 가로막다',h:'inter(사이) + rupt(깨다) → 사이에 끼어들어 끊음 → 방해 — r 두 개!'},
+{d:25,g:'root',w:'considerable',p:'kənsídərəbl',m:'상당한, 꽤 많은, 중요한',h:'consider(고려하다) + able → 따로 고려해야 할 만큼 → 상당한·중요한 · considerably'},
+{d:25,g:'root',w:'discard',p:'diskɑ́:rd',m:'버리다, 폐기하다',h:'dis(떼어내다) + card(카드) → 손에 든 카드를 내려놓다 → 버리다'},
+{d:25,g:'image',w:'release',p:'rilí:s',m:'배출하다, 풀어주다; 발표, 개봉, 발간',h:'꽉 쥔 손을 펴서 놓아줌 → 풀어주다·배출하다, 영화를 세상에 풀어놓음 → 개봉·발표 — 끝은 -ease!'},
+{d:25,g:'image',w:'waste',p:'weist',m:'쓰레기, 낭비; 낭비하다, 허비하다',h:'버리듯 써 버림 → 낭비, 버려진 것 → 쓰레기 — waist(허리)와 소리가 같으니 철자 a·s·t·e!'},
+{d:25,g:'image',w:'loss',p:'lɔ:s',m:'손실, 상실, 죽음',h:'lose(잃다)의 명사 — lose는 s 하나, loss는 s 두 개!'},
+{d:25,g:'image',w:'amazed',p:'əméizd',m:'놀란, 경악한',h:'amaze(놀라게 하다) + d → 내가 놀란 / amazing은 남을 놀라게 하는 ‘놀라운’ — -ed는 내 기분!'},
+{d:25,g:'image',w:'harm',p:'hɑ:rm',m:'해를 끼치다, 손상시키다; 피해, 손해',h:'harmful(해로운) ↔ harmless(무해한) — -ful은 가득, -less는 없음! (Day23 damage와 뜻 짝)'},
+{d:25,g:'image',w:'vast',p:'væst',m:'엄청난, 막대한, 광활한',h:'끝이 안 보이게 넓은 사막 → 광활한·막대한 · vastly (Day22 huge와 뜻 짝!)'},
+{d:25,g:'image',w:'fabric',p:'fǽbrik',m:'직물, 천, 구조',h:'실을 짜서 만든 천 → 직물 — 끝은 k 말고 c, fab·ric!'},
+{d:25,g:'image',w:'concrete',p:'kɑ́:nkri:t',m:'구체적인, 실제의, 콘크리트로 된',h:'콘크리트처럼 딱딱해서 만질 수 있는 → 구체적인·실제의 (↔ abstract 추상적인)'},
+{d:25,g:'image',w:'acknowledge',p:'æknɑ́lidʒ',m:'인정하다, 시인하다',h:'ac + knowledge(지식) → 아는 걸 안다고 말함 → 인정 — c·k 둘 다 쓰고, k는 소리 안 남!'},
+{d:25,g:'multi',w:'fine',p:'fain',m:'좋은, 멋진; 미세한, 섬세한; 벌금',h:'좋은·멋진 // 미세한·섬세한 (fine dust 미세먼지) // 벌금'},
+{d:25,g:'multi',w:'matter',p:'mǽtər',m:'물질; 문제; 중요하다',h:'물질 // 문제 → (문제가 될 정도로) 중요하다 · It doesn’t matter.(상관없어)'},
+{d:25,g:'pair',w:'quality',p:'kwɑ́:ləti',m:'질, 품질, 특성; 좋은 품질의, 고급의',h:'quaLity=질(좋고 나쁨) / quaNTity=양(얼마나 많은지) — N은 Number(수)의 N!'},
+{d:25,g:'pair',w:'quantity',p:'kwɑ́:ntəti',m:'양, 수량, 다량',h:'quaLity=질(좋고 나쁨) / quaNTity=양(얼마나 많은지) — N은 Number(수)의 N!'},
+{d:25,g:'pair',w:'delicate',p:'délikət',m:'섬세한, 정교한, 연약한',h:'deLicate=섬세한(끝소리 ‘킷’) / deDicate=헌신하다(끝소리 ‘케이트’) — 가운데 L·D 한 글자!'},
+{d:25,g:'pair',w:'dedicate',p:'dédikèit',m:'헌신하다, 전념하다',h:'deLicate=섬세한(끝소리 ‘킷’) / deDicate=헌신하다(끝소리 ‘케이트’) — 가운데 L·D 한 글자!'},
+/* Day 26 · 법과 사회 */
+{d:26,g:'root',w:'legal',p:'lí:gəl',m:'법률의, 합법적인',h:'leg(법) + al → 법의 (↔ illegal 불법의 — il이 붙으면 반대!)'},
+{d:26,g:'root',w:'arrest',p:'ərést',m:'체포하다, 억류하다',h:'ar(~에) + rest(멈추다) → 멈춰 세우다 → 체포 — r 두 개!'},
+{d:26,g:'root',w:'report',p:'ripɔ́:rt',m:'신고하다, 알리다; 보고서',h:'re(뒤로) + port(나르다) → 소식을 날라 오다 → 신고·보고 · reporter(기자)'},
+{d:26,g:'root',w:'innocent',p:'ínəsənt',m:'무죄인, 결백한, 순진한',h:'in(아닌) + noc(해치다) + ent → 아무도 해치지 않은 → 무죄인·순진한 — n 두 개! (↔ guilty)'},
+{d:26,g:'root',w:'violate',p:'váiəlèit',m:'위반하다, 어기다, 침해하다',h:'viol(힘) + ate → 힘으로 짓밟다 → 위반·침해 · violence(폭력)와 한 뿌리'},
+{d:26,g:'root',w:'criminal',p:'kríminl',m:'범죄자, 범인; 범죄의',h:'crime(범죄) + inal → 범죄의·범죄자 — crime의 e가 빠져요!'},
+{d:26,g:'root',w:'suspect',p:'səspékt / 명 sʌ́spekt',m:'의심하다, 짐작하다; 용의자',h:'sus(아래) + spect(보다) → 밑에서 흘끔 올려다봄 → 의심 (Day25 respect, Day24 aspect의 spect!)'},
+{d:26,g:'root',w:'neutral',p:'njú:trəl',m:'중립적인, 중립(국)의, 공평한',h:'neutr(어느 쪽도 아닌) + al → 중립의 — eu 순서 주의! · neutrality'},
+{d:26,g:'root',w:'accuse',p:'əkjú:z',m:'비난하다, 고발하다',h:'ac(~에게) + cuse(소송) → 남을 법정에 세움 → 고발·비난 — c 두 개!'},
+{d:26,g:'root',w:'complex',p:'kəmpléks / 명 kɑ́:mpleks',m:'복잡한, 뒤얽힌; 복합 단지',h:'com(함께) + plex(엮다) → 여럿이 함께 엮인 → 복잡한, 건물이 엮인 → 복합 단지'},
+{d:26,g:'root',w:'organize',p:'ɔ́:rgənàiz',m:'정리하다, 조직하다, 준비하다',h:'organ(몸의 기관) + ize → 기관처럼 짜임새 있게 → 조직·정리 · organization'},
+{d:26,g:'root',w:'secure',p:'sikjúər',m:'보호하다, 획득하다; 안전한, 확실한',h:'se(없이) + cure(걱정) → 걱정 없는 → 안전한 → 안전하게 지키다·확보하다 · security'},
+{d:26,g:'root',w:'conference',p:'kɑ́:nfərəns',m:'회의, 학회, 협의',h:'con(함께) + fer(나르다) + ence → 생각을 함께 날라 모음 → 회의 · press conference(기자 회견)'},
+{d:26,g:'root',w:'confront',p:'kənfrʌ́nt',m:'맞서다, 직면하다',h:'con(마주) + front(앞·얼굴) → 얼굴을 맞대다 → 맞서다·직면하다 (↔ avoid 피하다)'},
+{d:26,g:'root',w:'persuade',p:'pərswéid',m:'설득하다, 납득시키다',h:'per(끝까지) + suade(권하다) → 끝까지 권해 마음을 바꿈 → 설득 — u·a 순서! · persuasion'},
+{d:26,g:'root',w:'prohibit',p:'prouhíbit',m:'금지하다, 방해하다',h:'pro(앞) + hibit(붙잡다) → 앞을 막아 붙잡음 → 금지 — 가운데 h! (forbid와 뜻 짝)'},
+{d:26,g:'image',w:'obey',p:'oubéi',m:'지키다, 순종하다',h:'말을 잘 듣고 따르다 → 지키다·순종하다 (↔ disobey) · obedient(순종적인)'},
+{d:26,g:'image',w:'caution',p:'kɔ́:ʃən',m:'주의, 조심, 경고',h:'노란 신호등 = caution(주의) · cautious(조심스러운) — au!'},
+{d:26,g:'image',w:'charge',p:'tʃɑ:rdʒ',m:'청구하다, 부과하다, 맡기다; 요금, 책임',h:'원래 뜻은 ‘짐을 싣다’ → 요금을 지우다(청구) · 일을 지우다(맡기다) · free of charge(무료로)'},
+{d:26,g:'image',w:'search',p:'sə:rtʃ',m:'수색, 검색; 수색하다, 찾다',h:'인터넷 검색처럼 샅샅이 찾음 · search for(~을 찾다) — ea 다음 rch!'},
+{d:26,g:'image',w:'raise',p:'reiz',m:'제기하다, 들어 올리다, 기르다; 증가',h:'손을 들어 올리다 → (문제를) 제기하다 · 아이를 키워 올리다 → 기르다 — ai·se!'},
+{d:26,g:'image',w:'aim',p:'eim',m:'목적, 목표; 목표로 하다',h:'과녁을 겨누다 → 목표·목적 · aimless(목적 없는)'},
+{d:26,g:'image',w:'firm',p:'fə:rm',m:'회사; 굳은, 확고한',h:'형 굳은·확고한 / 명 회사 — 뜻이 둘! · firmly(단호하게) · law firm(법률 회사)'},
+{d:26,g:'image',w:'aid',p:'eid',m:'돕다, 거들다; 원조, 지원, 도움',h:'first aid(응급 처치) = 처음 하는 도움 → 돕다·원조 — a·i·d 세 글자!'},
+{d:26,g:'image',w:'plenty',p:'plénti',m:'많음, 다량, 풍부; 풍부한, 충분한',h:'plen(가득 찬) + ty → 가득함 → 풍부 · plenty of(많은)'},
+{d:26,g:'image',w:'phenomenon',p:'finɑ́:mənɑ̀:n',m:'현상, 사건',h:'phe·no·me·non — 끝이 -non, 여러 개면 phenomena!'},
+{d:26,g:'image',w:'mount',p:'maunt',m:'오르다, 올라타다; 산, 언덕',h:'산(mountain)에 오르다 → 오르다·올라타다 · 비용이 산처럼 쌓이다 (Day25 amount와 한 뿌리!)'},
+{d:26,g:'image',w:'found',p:'faund',m:'설립하다, 기초를 세우다',h:'find(찾다)의 과거형 found와 철자는 같지만 다른 단어! → 설립하다 · foundation(기초)'},
+{d:26,g:'image',w:'prove',p:'pru:v',m:'입증하다, 증명하다',h:'proof(증거)를 보여 줌 → 입증·증명 — 명사는 f, 동사는 v!'},
+{d:26,g:'image',w:'forbid',p:'fərbíd',m:'금지하다, 용납하지 않다',h:'for(막아) + bid(명령하다) → 하지 말라고 명령 → 금지 (prohibit, Day24 ban과 뜻 짝!)'},
+{d:26,g:'image',w:'stamp',p:'stæmp',m:'도장을 찍다; 도장, 우표',h:'꾹 눌러 찍는 도장·붙이는 우표 → 도장을 찍다'},
+{d:26,g:'image',w:'urge',p:'ə:rdʒ',m:'충동, 욕구; 촉구하다, 주장하다',h:'urgent(긴급한)처럼 급하게 몰아침 → 충동 · 빨리 하라고 촉구하다'},
+{d:26,g:'image',w:'scan',p:'skæn',m:'꼼꼼하게 살피다, 훑어보다',h:'스캐너처럼 한 줄씩 훑으며 살핌 — n 하나, scanned는 n 두 개!'},
+{d:26,g:'image',w:'moreover',p:'mɔ:róuvər',m:'게다가, 더욱이',h:'more + over 두 덩어리 (Day21 furthermore와 뜻 짝!)'},
+{d:26,g:'multi',w:'interest',p:'íntərəst',m:'관심, 호기심; 이익, 이해; 이자, 이율',h:'관심·호기심 // 이익·이해 → (은행이 주는 이익) 이자·이율 · interesting'},
+{d:26,g:'multi',w:'determine',p:'ditə́:rmin',m:'결정하다; 밝혀내다, 알아내다',h:'결정하다 // 밝혀내다·알아내다 · determination(결심)'},
+{d:26,g:'pair',w:'contrast',p:'kɑ́:ntræst',m:'차이, 대조, 대비; 대조하다',h:'contra(반대) + st(서다) → 맞세워 비교 → 대조 / con + tract(끌다) → 서로 끌어당겨 맺음 → 계약 (Day21 attract의 tract!)'},
+{d:26,g:'pair',w:'contract',p:'kɑ́:ntrækt / 동 kəntrǽkt',m:'계약(서); 계약하다',h:'contra(반대) + st(서다) → 맞세워 비교 → 대조 / con + tract(끌다) → 서로 끌어당겨 맺음 → 계약 (Day21 attract의 tract!)'},
+{d:26,g:'pair',w:'law',p:'lɔ:',m:'법, 법률, 법칙',h:'Law=법(L은 Legal의 L) / Raw=날것(R은 Rare 레어 스테이크의 R) — 소리도 l·r만 달라요!'},
+{d:26,g:'pair',w:'raw',p:'rɔ:',m:'날것의, 익히지 않은, 가공되지 않은',h:'Law=법(L은 Legal의 L) / Raw=날것(R은 Rare 레어 스테이크의 R) — 소리도 l·r만 달라요!'},
+/* Day 27 · 정치와 행정 */
+{d:27,g:'root',w:'politics',p:'pɑ́:lətiks',m:'정치(학)',h:'poli(도시·나라) + tics → 나라 일을 다루는 것 → 정치 · politician(정치인) — 끝 s까지 한 단어!'},
+{d:27,g:'root',w:'facility',p:'fəsíləti',m:'시설, 기관, 설비',h:'facil(쉬운) + ity → 일을 쉽게 해 주는 것 → 시설·설비 · facilitate(가능하게 하다)'},
+{d:27,g:'root',w:'candidate',p:'kǽndidèit',m:'후보(자), 지원자',h:'cand(하얀) → 옛 로마의 후보들은 흰 옷을 입었다 → 후보자 — can·di·date'},
+{d:27,g:'root',w:'civil',p:'sívəl',m:'시민의, 민간의',h:'civ(시민) + il → 시민의 · civilization(문명) · civil rights(시민의 권리)'},
+{d:27,g:'root',w:'conservative',p:'kənsə́:rvətiv',m:'보수의, 보수적인',h:'con(완전히) + serv(지키다) + ative → 옛것을 지키는 → 보수적인 · conservation(보존) (Day22 observe의 serv!)'},
+{d:27,g:'root',w:'belong',p:'bilɔ́:ŋ',m:'속하다, 소속감을 느끼다',h:'be + long(바라다) → 바라던 곳에 들어가 → 속하다 · belong to(~에 속하다) · belongings(소지품, 재산)'},
+{d:27,g:'root',w:'result',p:'rizʌ́lt',m:'결과; (~의 결과로) 발생하다, 기인하다',h:'re(되) + sult(뛰다) → 되튀어 나온 것 → 결과 · result from(~에서 비롯되다)'},
+{d:27,g:'root',w:'survey',p:'sə́:rvei / 동 sərvéi',m:'설문 조사; 조사하다, 바라보다',h:'sur(위) + vey(보다) → 위에서 내려다봄 → 조사·바라보다 · surveyor(조사관)'},
+{d:27,g:'root',w:'notice',p:'nóutis',m:'통지, 공고문; 알아차리다, 인지하다',h:'not(알다) + ice → 알아차리다, 알리는 글 → 통지 · notify(통지하다) (같은 Day notion과 한 뿌리!)'},
+{d:27,g:'root',w:'profit',p:'prɑ́:fit',m:'수익금, 이익; 이득을 얻다',h:'pro(앞으로) + fit(만들다) → 앞으로 나아가게 해 준 것 → 이익 (Day24 benefit의 fit! ↔ Day25 loss)'},
+{d:27,g:'root',w:'rural',p:'rúərəl',m:'시골의, 지방의',h:'rur(시골) + al → 시골의 — r이 세 번! (↔ urban 도시의)'},
+{d:27,g:'root',w:'urban',p:'ə́:rbən',m:'도시의, 도회지의',h:'urb(도시) + an → 도시의 (같은 Day suburb와 한 뿌리! ↔ rural 시골의)'},
+{d:27,g:'root',w:'simplify',p:'símpləfài',m:'단순화하다, 간소화하다',h:'simple(단순한) + ify(만들다) → 단순하게 만들다 · simplicity(간단함) — e가 빠지고 i!'},
+{d:27,g:'root',w:'committee',p:'kəmíti',m:'위원회',h:'commit(맡기다) + ee(맡은 사람들) → 일을 맡은 사람들 → 위원회 — mm, tt, ee 겹글자 세 쌍!'},
+{d:27,g:'root',w:'accompany',p:'əkʌ́mpəni',m:'동행하다, 동반하다',h:'ac(~에) + company(함께하는 사람) → 함께 가다 → 동행 — c 두 개!'},
+{d:27,g:'root',w:'proportion',p:'prəpɔ́:rʃən',m:'비율, 부분, 규모',h:'pro(~에 따라) + portion(부분) → 부분에 따른 몫 → 비율 (Day22 portion이 쏙!)'},
+{d:27,g:'root',w:'absence',p:'ǽbsəns',m:'부재, 결석',h:'ab(떨어져) + sence(있음) → 떨어져 있음 → 부재·결석 · absent (↔ presence) — 끝은 -ence!'},
+{d:27,g:'root',w:'primary',p:'práimeri',m:'주요한, 최초의',h:'prim(첫째) + ary → 맨 처음의·으뜸 → 최초의·주요한 · primary school(초등학교)'},
+{d:27,g:'root',w:'available',p:'əvéiləbl',m:'(이용) 가능한, 구할 수 있는',h:'a + vail(쓸모 있다) + able → 쓸 수 있는 → 이용 가능한 — possible(일이 가능한)과 달리 물건·서비스에!'},
+{d:27,g:'root',w:'notion',p:'nóuʃən',m:'개념, 관념',h:'not(알다) + ion → 머릿속에 아는 생각 → 개념 (같은 Day notice와 한 뿌리!)'},
+{d:27,g:'root',w:'suburb',p:'sʌ́bə:rb',m:'교외, 시외',h:'sub(가까이) + urb(도시) → 도시 바로 옆 → 교외 · suburban (같은 Day urban과 한 뿌리!)'},
+{d:27,g:'root',w:'resident',p:'rézədənt',m:'거주자, 주민, 투숙객',h:'re(뒤에) + sid(앉다) + ent → 눌러앉은 사람 → 거주자 · reside(살다) · residence(주택)'},
+{d:27,g:'root',w:'investigate',p:'invéstəgèit',m:'조사하다, 수사하다',h:'in(안으로) + vestig(발자국) + ate → 발자국을 따라 들어가다 → 조사·수사 · investigation'},
+{d:27,g:'root',w:'reinforce',p:'rì:infɔ́:rs',m:'보강하다, 강화하다',h:'re(다시) + in(안에) + force(힘) → 다시 힘을 넣다 → 보강·강화 (↔ weaken 약화시키다)'},
+{d:27,g:'root',w:'govern',p:'gʌ́vərn',m:'통치하다, 다스리다',h:'원래 뜻은 ‘배의 키를 잡다’ → 나라를 다스리다 · government(정부) — gov·ern, n 앞에 r!'},
+{d:27,g:'image',w:'vote',p:'vout',m:'투표, 표; 투표하다, 선출하다',h:'투표함에 표를 넣다 → 투표 · voter(유권자) — o 다음 te!'},
+{d:27,g:'image',w:'limit',p:'límit',m:'제한, 한도, 한계; 제한하다, 한정하다',h:'speed limit(제한 속도) · limited(한정된) — i 두 번, 끝은 -it!'},
+{d:27,g:'image',w:'guard',p:'gɑ:rd',m:'경호하다, 지키다; 경비 요원',h:'bodyguard(경호원)의 guard · guardian(후견인) — g 다음 u 잊지 말기!'},
+{d:27,g:'image',w:'deny',p:'dinái',m:'부인하다, 부정하다',h:'아니라고 고개 젓기 → 부인하다 · denial(부인) (↔ admit 인정하다) — denied는 y가 i로!'},
+{d:27,g:'image',w:'opinion',p:'əpínjən',m:'의견, 여론, 생각',h:'in my opinion(내 생각에는) — o·pin·ion, i가 두 번!'},
+{d:27,g:'image',w:'household',p:'háushòuld',m:'가구, 가정, 가족; 가족의',h:'house(집) + hold(담다) → 한 집에 담긴 사람들 → 가구·가정 · household appliances(가전제품)'},
+{d:27,g:'image',w:'spot',p:'spɑ:t',m:'발견하다, 찾다; 점, 얼룩, 지점',h:'점·얼룩 → 콕 찍어 발견하다 · spotless(티끌 하나 없는) — spotted는 t 두 개!'},
+{d:27,g:'image',w:'harbor',p:'hɑ́:rbər',m:'항구, 항만; 정박하다, 숨기다',h:'배가 들어가 쉬는 항구 → 정박하다, 몰래 품어 두다 → 숨기다 — 끝은 -or!'},
+{d:27,g:'image',w:'garage',p:'gərɑ́:dʒ',m:'주차장, 차고',h:'차를 넣어 두는 곳 → 차고·주차장 — 소리는 ‘거라:지’, 철자는 ga·rage!'},
+{d:27,g:'multi',w:'issue',p:'íʃu:',m:'문제, 쟁점, 사안; 발행물, (출판물의) 호; 발급하다, 교부하다',h:'원래 뜻은 ‘밖으로 나오다’ → 튀어나온 문제·쟁점 // 세상에 내보낸 발행물·호 // 증명서를 내주다 → 발급하다'},
+{d:27,g:'multi',w:'rate',p:'reit',m:'(비)율; 속도; 요금; 평가하다',h:'(비)율 → (움직이는 비율) 속도 / (비율로 정한) 요금 // 평가하다 · birth rate(출산율)'},
+{d:27,g:'pair',w:'official',p:'əfíʃəl',m:'공식적인, 공인된; 공무원',h:'officiAL=공식적인(형용사) / officER=직원·관리(사람은 -er!) — 둘 다 office(사무실)에서 나옴'},
+{d:27,g:'pair',w:'officer',p:'ɔ́:fisər',m:'직원, 관리, 장교',h:'officiAL=공식적인(형용사) / officER=직원·관리(사람은 -er!) — 둘 다 office(사무실)에서 나옴'},
+{d:27,g:'pair',w:'bother',p:'bɑ́:ðər',m:'방해하다, 신경 쓰다',h:'boTHer=방해하다 / boRDer=국경·경계(Day23 boundary와 뜻 짝) — 가운데가 th냐 rd냐!'},
+{d:27,g:'pair',w:'border',p:'bɔ́:rdər',m:'국경, 경계, 가장자리',h:'boTHer=방해하다 / boRDer=국경·경계(Day23 boundary와 뜻 짝) — 가운데가 th냐 rd냐!'},
+/* Day 28 · 경제와 금융 */
+{d:28,g:'root',w:'economic',p:'èkənɑ́:mik',m:'경제의, 경제상의',h:'eco(집) + nom(관리) + ic → 집안 살림 관리 → 경제의 (Day22 ecosystem의 eco!) · economical(절약하는)과 구별'},
+{d:28,g:'root',w:'possible',p:'pɑ́:səbl',m:'가능한',h:'poss(할 수 있다) + ible → 가능한 (↔ impossible) — able 말고 ible! · possibility(가능성)'},
+{d:28,g:'root',w:'income',p:'ínkʌm',m:'소득, 수입',h:'in(안으로) + come(오다) → 안으로 들어오는 돈 → 소득·수입'},
+{d:28,g:'root',w:'offer',p:'ɔ́:fər',m:'제공하다, 제의하다; 제공, 제의',h:'of(~에게) + fer(나르다) → 내밀어 가져다줌 → 제공·제의 (Day26 conference의 fer!) — f 두 개!'},
+{d:28,g:'root',w:'specific',p:'spisífik',m:'특정한, 구체적인',h:'spec(종류·보다) + ific → 딱 그 종류로 콕 집은 → 특정한·구체적인 (Day21 species와 한 뿌리!)'},
+{d:28,g:'root',w:'provide',p:'prəváid',m:'제공하다, 공급하다',h:'pro(앞) + vide(보다) → 앞을 내다보고 미리 마련해 줌 → 제공 · provider (같은 Day offer와 뜻 짝!)'},
+{d:28,g:'root',w:'merchant',p:'mə́:rtʃənt',m:'상인, 무역상',h:'merc(사고팔다) + ant → 사고파는 사람 → 상인 · merchandise(물품)'},
+{d:28,g:'root',w:'finance',p:'fáinæns',m:'재무, 재정, 금융; 자금을 대다',h:'fin(끝) → 돈을 치러 일을 끝냄 → 재정·금융 · financial(재정의)'},
+{d:28,g:'root',w:'derive',p:'diráiv',m:'얻다, 끌어내다, 비롯되다',h:'de(~에서) + rive(냇물) → 냇물을 끌어오다 → 얻다·끌어내다·비롯되다 · derive from(~에서 비롯되다)'},
+{d:28,g:'root',w:'credit',p:'krédit',m:'신용, 신뢰; 믿다, ~의 공으로 인정하다',h:'cred(믿다) + it → 믿음 → 신용 · credit card · credible (Day22 incredible의 cred!)'},
+{d:28,g:'root',w:'substitute',p:'sʌ́bstətjù:t',m:'대체품, 대안; 대체하다, 대신하다',h:'sub(대신) + stitute(세우다) → 대신 세우다 → 대체 · 교체 선수도 substitute (Day25 alternative와 뜻 짝!)'},
+{d:28,g:'root',w:'replace',p:'ripléis',m:'교체하다, 대체하다, 바꾸다',h:'re(다시) + place(놓다) → 그 자리에 다른 걸 다시 놓다 → 교체 · replacement'},
+{d:28,g:'root',w:'property',p:'prɑ́:pərti',m:'부동산, 재산, 소유물',h:'proper(자기 것의) + ty → 내 것 → 재산·소유물·부동산 · private property(사유 재산)'},
+{d:28,g:'root',w:'refund',p:'rí:fʌnd / 동 rifʌ́nd',m:'환불, 환불금; 환불하다',h:'re(되돌려) + fund(자금) → 돈을 되돌려 줌 → 환불 · refundable(환불 가능한)'},
+{d:28,g:'root',w:'hardship',p:'hɑ́:rdʃip',m:'어려움, 고난',h:'hard(어려운) + ship(상태) → 어려운 상태 → 고난 — friendship처럼 끝이 -ship!'},
+{d:28,g:'root',w:'assemble',p:'əsémbl',m:'모이다, 집합시키다, 조립하다',h:'as(~로) + semble(함께) → 한데 모으다 → 모이다·조립 · assembly(의회, 조립) — s 두 개!'},
+{d:28,g:'root',w:'independent',p:'ìndipéndənt',m:'독립적인, 자치적인',h:'in(아닌) + depend(기대다) + ent → 기대지 않는 → 독립적인 · independence(독립) — 끝은 -ent!'},
+{d:28,g:'root',w:'overall',p:'óuvərɔ̀:l',m:'전반적인, 종합적인; 전반적으로, 대체로',h:'over(전체 위로) + all(모두) → 전체를 아우르는 → 전반적인 — 붙여서 한 단어!'},
+{d:28,g:'root',w:'approach',p:'əpróutʃ',m:'다가오다, 접촉하다; 접근, 방법',h:'ap(~쪽으로) + proach(가까이) → 가까이 다가오다 → 접근 — p 두 개, oa!'},
+{d:28,g:'root',w:'impact',p:'impǽkt / 명 ímpækt',m:'영향을 미치다, 충격을 주다; 영향, 충격',h:'im(안으로) + pact(쳐 박다) → 쾅 부딪침 → 충격·영향 · have an impact on (Day23 influence와 뜻 짝!)'},
+{d:28,g:'root',w:'accelerate',p:'æksélərèit',m:'가속하다, 촉진시키다',h:'ac(~에) + celer(빠른) + ate → 빠르게 하다 → 가속 · accelerator(액셀) — c 두 개, l 하나!'},
+{d:28,g:'root',w:'collapse',p:'kəlǽps',m:'실패하다, 무너지다, 붕괴되다; 붕괴, 실패',h:'col(함께) + lapse(미끄러지다) → 한꺼번에 미끄러져 무너짐 → 붕괴 — l 두 개!'},
+{d:28,g:'root',w:'purchase',p:'pə́:rtʃəs',m:'구매하다; 구매, 구입한 것',h:'pur(~을 위해) + chase(쫓다) → 원하는 걸 쫓아가 얻다 → 구매'},
+{d:28,g:'image',w:'budget',p:'bʌ́dʒit',m:'예산, 비용; 예산을 세우다',h:'원래 뜻은 ‘작은 돈주머니’ → 쓸 돈 → 예산 — bud·get, 가운데 d 꼭!'},
+{d:28,g:'image',w:'crisis',p:'kráisis',m:'위기, 중대한 기로',h:'cri·sis — 여러 개면 crises! (Day26 phenomenon → phenomena처럼)'},
+{d:28,g:'image',w:'trade',p:'treid',m:'거래하다, 교환하다; 거래, 무역',h:'물건을 주고받다 → 거래·무역 · trader(상인) (Day21 exchange와 뜻 짝!)'},
+{d:28,g:'image',w:'invest',p:'invést',m:'투자하다, (시간·노력 등을) 쓰다',h:'vest(조끼) 안주머니에 돈을 넣어 두듯 → 투자 · investment — Day27 investigate와 앞부분만 같아요!'},
+{d:28,g:'image',w:'wealth',p:'welθ',m:'부, 재산',h:'health(건강)처럼 끝이 -th! · wealthy(부유한)'},
+{d:28,g:'image',w:'debt',p:'det',m:'빚, 부채',h:'소리는 ‘뎃’, b는 소리 안 나요! · in debt(빚진)'},
+{d:28,g:'image',w:'cancel',p:'kǽnsəl',m:'취소하다, 무효화하다; 취소, 해제',h:'예약을 지우다 → 취소 · cancellation은 l이 두 개!'},
+{d:28,g:'image',w:'branch',p:'bræntʃ',m:'지점, 지사, 나뭇가지',h:'나뭇가지 → 가지처럼 뻗어 나간 지점·지사 (Day21 stem 줄기와 짝!)'},
+{d:28,g:'image',w:'recover',p:'rikʌ́vər',m:'회복하다, 되찾다',h:'re(다시) — 잃었던 것을 다시 찾음 → 회복·되찾다 · recovery (cover와는 상관없어요!)'},
+{d:28,g:'image',w:'stir',p:'stə:r',m:'불러일으키다, 젓다; 동요, 젓기',h:'숟가락으로 휘휘 젓다 → 마음을 휘저어 불러일으키다 · stir-fry(볶다) — stirred는 r 두 개!'},
+{d:28,g:'image',w:'challenge',p:'tʃǽlindʒ',m:'과제, 도전; 의욕을 북돋우다, 도전하다',h:'어려운 과제에 도전 · challenging(도전적인) — ll 두 개, 끝은 -enge!'},
+{d:28,g:'multi',w:'bill',p:'bil',m:'지폐; 계산서, 청구서; 법안; (새의) 부리',h:'지폐 → (지폐나 동전으로 지불하는) 계산서·청구서 // 법안 // (새의) 부리'},
+{d:28,g:'multi',w:'account',p:'əkáunt',m:'계좌, 계정; 설명하다; 차지하다',h:'계좌·계정 → (계좌 내역을 자세하게) 설명하다 // 차지하다 · account for(설명하다, 차지하다)'},
+{d:28,g:'pair',w:'several',p:'sévərəl',m:'몇몇의, 여러 가지의',h:'seVERAL=몇몇의(개수) / seVERE=심각한(정도) — 끝이 -al이냐 -e냐! 소리도 ‘세버럴’ vs ‘시비어’'},
+{d:28,g:'pair',w:'severe',p:'sivíər',m:'심각한, 극심한, 엄격한',h:'seVERAL=몇몇의(개수) / seVERE=심각한(정도) — 끝이 -al이냐 -e냐! 소리도 ‘세버럴’ vs ‘시비어’'},
+{d:28,g:'pair',w:'proceed',p:'prəsí:d',m:'진행하다, 나아가다',h:'PROceed=앞으로(pro) 나아가다 / PREcede=먼저(pre) 가다·앞서다 — 철자도 ceed vs cede! (Day21 exceed의 ceed, 가다)'},
+{d:28,g:'pair',w:'precede',p:'prisí:d',m:'선행하다, 앞서다',h:'PROceed=앞으로(pro) 나아가다 / PREcede=먼저(pre) 가다·앞서다 — 철자도 ceed vs cede! (Day21 exceed의 ceed, 가다)'},
+/* Day 29 · 산업과 경영 */
+{d:29,g:'image',w:'industry',p:'índəstri',m:'산업, 공업',h:'원래 뜻은 ‘부지런함’ → 부지런히 물건을 만드는 일 → 산업·공업 · industrial(산업의)'},
+{d:29,g:'root',w:'policy',p:'pɑ́:ləsi',m:'방침, 정책, 보험 증권',h:'poli(나라·도시) → 나라를 다스리는 방침 → 정책 (Day27 politics와 한 뿌리!) — 끝은 -cy!'},
+{d:29,g:'root',w:'commercial',p:'kəmə́:rʃəl',m:'상업의, 상업적인; 광고 방송',h:'com(함께) + merc(사고팔다) + ial → 상업의 · TV 광고도 commercial (Day28 merchant의 merc!)'},
+{d:29,g:'root',w:'convey',p:'kənvéi',m:'전달하다, 운송하다',h:'con(함께) + vey(길) → 길을 따라 실어 나르다 → 운송·전달 · convey a message(메시지를 전달하다)'},
+{d:29,g:'root',w:'international',p:'ìntərnǽʃənəl',m:'국제의, 국제적인',h:'inter(사이) + nation(나라) + al → 나라와 나라 사이의 → 국제의 (Day25 interrupt의 inter!)'},
+{d:29,g:'root',w:'reveal',p:'riví:l',m:'드러내다, 밝히다, 폭로하다',h:'re(벗겨) + veal(베일·덮개) → 베일을 벗기다 → 드러내다 · revelation (↔ hide 숨기다)'},
+{d:29,g:'root',w:'increase',p:'inkrí:s / 명 ínkri:s',m:'증가하다, 늘다, 인상되다; 증가, 증대',h:'in(위로) + crease(자라다) → 늘어나다 · decrease(감소)는 de(아래로)! — 발음: 동사는 뒤에 힘'},
+{d:29,g:'root',w:'depend',p:'dipénd',m:'의존하다, 의지하다',h:'de(아래로) + pend(매달리다) → 아래로 매달리다 → 의존 · depend on (Day28 independent에서 in을 빼면!)'},
+{d:29,g:'pair',w:'transfer',p:'trænsfə́:r / 명 trǽnsfər',m:'갈아타다, 옮기다, 이동하다; 이동, 환승',h:'transFER=옮기다·갈아타다(fer=나르다, Day28 offer의 fer) / transFORM=모양(form)을 바꾸다 — trans(건너) 뒤가 fer냐 form이냐!'},
+{d:29,g:'pair',w:'transform',p:'trænsfɔ́:rm',m:'변형시키다, 바꾸다',h:'transFER=옮기다·갈아타다(fer=나르다, Day28 offer의 fer) / transFORM=모양(form)을 바꾸다 — trans(건너) 뒤가 fer냐 form이냐!'},
+{d:29,g:'image',w:'launch',p:'lɔ:ntʃ',m:'출시하다, 시작하다; 개시 (행사)',h:'로켓을 쏘아 올리듯 → 신제품을 세상에 쏘아 올림 → 출시·시작 — au 다음 nch!'},
+{d:29,g:'root',w:'deliver',p:'dilívər',m:'배달하다, 연설하다, 출산하다',h:'de(떨어져) + liver(자유롭게) → 손에서 놓아 넘겨줌 → 배달 · 말을 넘겨줌 → 연설 · 아기를 세상에 → 출산 · delivery'},
+{d:29,g:'image',w:'measure',p:'méʒər',m:'측정하다, 재다; 측정, 계량',h:'자로 재다 → 측정 · measurement(치수) — 끝이 -sure, Day24 treasure와 같아요!'},
+{d:29,g:'image',w:'claim',p:'kleim',m:'주장하다, 요구하다; 주장, 요구, 권리',h:'내 것이라고 큰 소리로 외치다 → 주장·요구 · 공항의 baggage claim(짐 찾는 곳) — ai!'},
+{d:29,g:'root',w:'satisfy',p:'sǽtisfài',m:'만족시키다, 충족시키다',h:'satis(충분한) + fy(만들다) → 충분하게 만들다 → 만족 · satisfaction (Day27 simplify처럼 -fy는 ‘만들다’)'},
+{d:29,g:'root',w:'opposite',p:'ɑ́:pəzit',m:'반대, 반대의 사람; 반대의, 맞은편의',h:'op(맞서) + pos(놓다) + ite → 맞은편에 놓인 → 반대의 · oppose (Day22 expose의 pos!)'},
+{d:29,g:'image',w:'strategy',p:'strǽtədʒi',m:'계획, 전략',h:'원래 뜻은 ‘장군의 작전’ → 전략·계획 · strategic(전략적인) — stra·te·gy'},
+{d:29,g:'root',w:'import',p:'impɔ́:rt / 명 ímpɔ:rt',m:'수입하다; 수입(품)',h:'im(안으로) + port(나르다) → 안으로 실어 옴 → 수입 (↔ export 수출, Day26 report의 port!)'},
+{d:29,g:'image',w:'trap',p:'træp',m:'함정, 덫, 궁지; 가두다, 함정에 빠뜨리다',h:'쥐덫처럼 걸려들게 하는 함정 → 가두다 · trapped(갇힌)는 p가 두 개!'},
+{d:29,g:'multi',w:'present',p:'préznt / 동 prizént',m:'존재하는; 현재의; 발표하다, 제시하다; 선물',h:'존재하는 → (지금 눈앞에 존재하는 순간) 현재의 // 발표하다·제시하다 → (누군가에게 주려고 제시된 물건) 선물 · presence(Day27 absence의 반대!)'},
+{d:29,g:'image',w:'consult',p:'kənsʌ́lt',m:'상담하다, 상의하다',h:'컨설턴트(consultant)=상담가 → consult 상담하다·상의하다 · consultation(상담)'},
+{d:29,g:'root',w:'organic',p:'ɔ:rgǽnik',m:'유기농의, 유기체의',h:'organ(몸의 기관) + ic → 생물의 몸에서 나온 → 유기체의·유기농의 (Day26 organize와 한 뿌리!)'},
+{d:29,g:'root',w:'manufacture',p:'mæ̀njufǽktʃər',m:'제조하다, 생산하다; 제조, 생산',h:'manu(손) + fact(만들다) + ure → 손으로 만들다 → 제조 (manual 손으로 하는의 manu!) · manufacturer'},
+{d:29,g:'root',w:'negative',p:'négətiv',m:'부정적인, 비관적인',h:'neg(아니다) + ative → 아니라고 하는 → 부정적인 (↔ positive 긍정적인)'},
+{d:29,g:'image',w:'peasant',p:'pézənt',m:'소작농, 영세 농민',h:'프랑스어 pays(시골)에서 온 말 → 시골에서 남의 땅을 부치는 사람 → 소작농 — pleasant(즐거운)와 l 하나 차이!'},
+{d:29,g:'root',w:'agriculture',p:'ǽgrəkʌ̀ltʃər',m:'농업',h:'agri(밭) + culture(가꾸기) → 밭을 가꾸는 일 → 농업 · agricultural(농업의)'},
+{d:29,g:'root',w:'alter',p:'ɔ́:ltər',m:'바꾸다, 변경하다',h:'alter(다른) → 다르게 바꾸다 → 변경 · alteration (Day25 alternative와 한 뿌리!)'},
+{d:29,g:'root',w:'combine',p:'kəmbáin',m:'결합시키다, 연합시키다',h:'com(함께) + bine(둘씩) → 둘을 하나로 합침 → 결합 · combination — 콤비!'},
+{d:29,g:'pair',w:'compete',p:'kəmpí:t',m:'경쟁하다, 겨루다',h:'comPETE=경쟁하다(competition 대회) / comPLETE=완료하다(plete=가득 채우다) — l 하나로 뜻이 바뀌어요!'},
+{d:29,g:'pair',w:'complete',p:'kəmplí:t',m:'완료하다, 마치다; 완성된, 완전한',h:'comPETE=경쟁하다(competition 대회) / comPLETE=완료하다(plete=가득 채우다) — l 하나로 뜻이 바뀌어요!'},
+{d:29,g:'root',w:'advance',p:'ædvǽns',m:'진보하다, 다가가다; 진보, 발전',h:'adv(앞으로) + ance → 앞으로 나아가다 → 진보 · advanced(선진의, 고급의) — d 다음 v!'},
+{d:29,g:'root',w:'imply',p:'implái',m:'시사하다, 암시하다',h:'im(안에) + ply(접다) → 말속에 뜻을 접어 넣다 → 암시 · implication — implied는 y가 i로!'},
+{d:29,g:'image',w:'guarantee',p:'gæ̀rəntí:',m:'보장하다, 약속하다; 보증, 품질보증서',h:'개런티(보증)처럼 보장·보증 · guaranteed(보장된) — gua로 시작, 끝은 ee 두 개!'},
+{d:29,g:'image',w:'chief',p:'tʃi:f',m:'주요한, 최고의; 지배자, 장관',h:'우두머리·최고 → 주요한 · chiefly(주로) — i·e 순서, Day21 fierce와 같아요!'},
+{d:29,g:'image',w:'thrive',p:'θraiv',m:'번창하다, 번성하다',h:'풀이 쑥쑥 자라듯 → 번성·번창 · thriving(번성하는) — th로 시작해 ve로 끝!'},
+{d:29,g:'image',w:'gain',p:'gein',m:'얻다, 벌다, 획득하다; 증가, 이득',h:'No pain, no gain!(고통 없이 얻는 것도 없다) (↔ Day25 loss)'},
+{d:29,g:'root',w:'overlook',p:'òuvərlúk',m:'간과하다, 못 본 체하다',h:'over(넘어) + look(보다) → 위로 넘겨 보다가 놓침 → 간과하다·못 본 체하다'},
+{d:29,g:'root',w:'disappear',p:'dìsəpíər',m:'사라지다, 없어지다',h:'dis(반대) + appear(나타나다) → 사라지다 — s 하나, p 두 개! · disappearance'},
+{d:29,g:'root',w:'initial',p:'iníʃəl',m:'초기의, 처음의; 머리글자',h:'init(처음 들어가다) + ial → 처음의 · 이름의 첫 글자 → 머리글자 (↔ final 마지막의)'},
+{d:29,g:'multi',w:'domestic',p:'dəméstik',m:'국내의, 국산의; 가정의, 집안의',h:'dom(집) → 가정의·집안의 // 나라를 큰 집으로 보면 → 국내의·국산의 · domesticate(길들이다)'},
+/* Day 30 · 언론과 뉴스 */
+{d:30,g:'image',w:'magazine',p:'mæ̀gəzí:n',m:'잡지',h:'매거진=잡지 — 끝은 -zine!'},
+{d:30,g:'image',w:'article',p:'ɑ́:rtikl',m:'기사, 글, 조항, 관사',h:'신문 기사 한 편 → 기사·글 · 법의 한 항목 → 조항 · a·an·the → 관사 — ar·ti·cle'},
+{d:30,g:'image',w:'press',p:'pres',m:'언론, 신문사; 누르다, 재촉하다',h:'버튼을 누르다 → 인쇄기로 꾹 눌러 찍는 곳 → 신문사·언론 · pressure(압박) · press conference(Day26 기자 회견)'},
+{d:30,g:'root',w:'advertise',p:'ǽdvərtàiz',m:'광고하다, 선전하다',h:'ad(~쪽으로) + vert(돌리다) → 사람들 눈을 돌리게 함 → 광고 · advertisement — 끝은 -ise!'},
+{d:30,g:'image',w:'recent',p:'rí:snt',m:'최근의, 근래의',h:'recently(최근에) — re·cent, 가운데는 c!'},
+{d:30,g:'root',w:'diverse',p:'divə́:rs',m:'다양한, 여러 가지의',h:'di(떨어져) + vers(돌다) → 여러 방향으로 돌아선 → 다양한 · diversity (같은 Day advertise의 vert와 한 뿌리!)'},
+{d:30,g:'root',w:'document',p:'dɑ́:kjumənt / 동 dɑ́:kjumènt',m:'문서, 서류, 파일; 기록하다, (서류로) 입증하다',h:'docu(가르치다·보여 주다) + ment → 증거로 보여 주는 글 → 문서 · 다큐멘터리 — 끝은 -ment!'},
+{d:30,g:'root',w:'expert',p:'ékspə:rt',m:'전문가, 숙련가',h:'ex + pert(시험해 보다) → 많이 해 봐서 잘 아는 사람 → 전문가 · expertise(전문 지식) (experience와 한 뿌리!)'},
+{d:30,g:'pair',w:'explore',p:'iksplɔ́:r',m:'탐험하다, 답사하다, 조사하다',h:'exploRe=탐험하다(익스플로러) / exploDe=폭발하다(D는 Dynamite의 D) — 가운데 r이냐 d냐!'},
+{d:30,g:'pair',w:'explode',p:'iksplóud',m:'(폭탄이) 터지다, 폭발하다',h:'exploRe=탐험하다(익스플로러) / exploDe=폭발하다(D는 Dynamite의 D) — 가운데 r이냐 d냐!'},
+{d:30,g:'image',w:'handle',p:'hǽndl',m:'다루다, 처리하다, 만지다; 손잡이, 자루',h:'손(hand)으로 다루다 → 처리하다 · 손으로 잡는 부분 → 손잡이 — hand + le!'},
+{d:30,g:'image',w:'phrase',p:'freiz',m:'문구, 구절, 관용구',h:'소리는 ‘프레이즈’ — ph는 f 소리! · phrasal(구로 된)'},
+{d:30,g:'image',w:'annoy',p:'ənɔ́i',m:'짜증 나게 하다',h:'annoying(짜증 나는) — n 두 개, 끝은 oy! (Day27 bother와 뜻 짝)'},
+{d:30,g:'root',w:'obvious',p:'ɑ́:bviəs',m:'분명한, 확실한',h:'ob(앞에) + vi(길) → 길 바로 앞에 놓여 누구나 보는 → 분명한 · obviously'},
+{d:30,g:'image',w:'mention',p:'ménʃən',m:'언급하다, 말하다',h:'멘션=언급 · Don’t mention it.(천만에요.) — 끝은 -tion!'},
+{d:30,g:'root',w:'entertain',p:'èntərtéin',m:'즐겁게 하다, 대접하다',h:'enter(사이) + tain(붙잡다) → 사람들을 붙잡아 머물게 함 → 즐겁게 하다·대접 · entertainment (Day21 contain의 tain!)'},
+{d:30,g:'root',w:'detail',p:'ditéil',m:'세부 사항, 세부 묘사',h:'de(완전히) + tail(자르다) → 잘게 잘라 나눈 것 → 세부 사항 · detailed(상세한)'},
+{d:30,g:'root',w:'conflict',p:'kɑ́:nflikt / 동 kənflíkt',m:'갈등, 충돌; 상충하다',h:'con(서로) + flict(치다) → 서로 부딪쳐 침 → 갈등·충돌 · conflict of interest(이해의 충돌)'},
+{d:30,g:'image',w:'thus',p:'ðʌs',m:'따라서, 이와 같이',h:'앞 문장의 결과를 말할 때 쓰는 연결어 (Day21 furthermore, Day26 moreover와 같은 무리) — th + us'},
+{d:30,g:'multi',w:'medium',p:'mí:diəm',m:'중간의; 매(개)체, 도구; 수단, 도구',h:'중간의 → (중간에서 둘 사이를 이어 주는) 매(개)체 / (중간에서 전달하는) 수단 · 여러 개면 media!'},
+{d:30,g:'root',w:'depress',p:'diprés',m:'우울하게 하다, 낙담시키다',h:'de(아래로) + press(누르다) → 마음을 아래로 누르다 → 우울하게 하다 · depression (같은 Day press!)'},
+{d:30,g:'root',w:'demand',p:'dimǽnd',m:'요구하다, 필요로 하다; 요구, 청구, 수요',h:'de(강하게) + mand(맡기다·명령하다) → 강하게 요구 → 요구·수요 (↔ Day24 supply 공급)'},
+{d:30,g:'root',w:'identify',p:'aidéntifài',m:'확인하다, 알아보다',h:'ident(같은) + ify(만들다) → 같은 사람인지 맞춰 봄 → 확인 · ID card의 ID = identification'},
+{d:30,g:'image',w:'award',p:'əwɔ́:rd',m:'상, 상패; 수여하다, 주다',h:'시상식 = award ceremony → 상을 수여하다 — a + ward'},
+{d:30,g:'image',w:'regret',p:'rigrét',m:'후회하다, 유감으로 생각하다; 후회, 유감',h:'regret ~ing(~한 것을 후회하다) — regretted는 t 두 개!'},
+{d:30,g:'root',w:'regard',p:'rigɑ́:rd',m:'여기다, 간주하다; 관심, 고려, 존경',h:'re(다시) + gard(지켜보다) → 다시 눈여겨보다 → 여기다·관심 · regardless of(~에 상관없이) (Day27 guard와 한 뿌리!)'},
+{d:30,g:'root',w:'inquire',p:'inkwáiər',m:'질문하다, 알아보다',h:'in(안으로) + quire(묻다·찾다) → 안을 들여다보며 묻다 → 질문 · inquiry — qu 다음 ire!'},
+{d:30,g:'root',w:'script',p:'skript',m:'대본, 각본',h:'script(쓰다) → 써 놓은 글 → 대본·각본 (description의 script도 같은 뿌리)'},
+{d:30,g:'pair',w:'decline',p:'dikláin',m:'쇠퇴, 감소; 감소하다, 쇠퇴하다',h:'deCLINE=쇠퇴·감소(cline=기울다 → 아래로 기울어짐) / deCLARE=선언(clare=분명한 → 분명히 밝힘, 같은 Day clarify의 clar!)'},
+{d:30,g:'pair',w:'declare',p:'dikléər',m:'선언하다, 선포하다',h:'deCLINE=쇠퇴·감소(cline=기울다 → 아래로 기울어짐) / deCLARE=선언(clare=분명한 → 분명히 밝힘, 같은 Day clarify의 clar!)'},
+{d:30,g:'root',w:'deceive',p:'disí:v',m:'기만하다, 속이다',h:'de(떨어져) + ceive(잡다) → 덫으로 잡다 → 속이다 · deceit — c 다음엔 e·i 순서! (receive처럼)'},
+{d:30,g:'root',w:'external',p:'ikstə́:rnl',m:'외부의, 밖의',h:'ex(밖) + ternal → 바깥의 (↔ internal 내부의) — ex·ter·nal'},
+{d:30,g:'image',w:'instantly',p:'ínstəntli',m:'즉시, 즉각적으로',h:'인스턴트(즉석) 라면처럼 → 즉시 · instant(즉각적인) + ly'},
+{d:30,g:'image',w:'norm',p:'nɔ:rm',m:'표준, 기준, 규범',h:'normal(보통의)의 바탕 → 보통 지키는 기준 → 표준·규범 · social norm(사회적 규범)'},
+{d:30,g:'root',w:'analyze',p:'ǽnəlàiz',m:'분석하다, 해석하다',h:'ana(완전히) + lyze(풀다) → 하나하나 풀어 헤침 → 분석 · analysis — y와 z 자리 주의!'},
+{d:30,g:'root',w:'clarify',p:'klǽrəfài',m:'명확히 하다, 분명히 말하다',h:'clar(맑은·분명한) + ify(만들다) → 분명하게 만들다 · clarification (Day27 simplify처럼 -ify!)'},
+{d:30,g:'root',w:'defend',p:'difénd',m:'지키다, 방어하다, 변호하다',h:'de(떨어져) + fend(치다) → 쳐서 물리치다 → 방어·변호 · defense (↔ attack 공격하다)'},
+{d:30,g:'root',w:'reputation',p:'rèpjutéiʃən',m:'평판, 명성',h:'re(거듭) + put(생각하다) + ation → 사람들이 거듭 떠올리는 생각 → 평판·명성'},
+{d:30,g:'root',w:'exclude',p:'iksklú:d',m:'제외하다, 차단하다',h:'ex(밖) + clude(닫다) → 문을 닫아 밖에 둠 → 제외 · exclusive(독점적인) (↔ include 포함하다)'},
+{d:30,g:'multi',w:'net',p:'net',m:'망, 그물망; (에누리 없는) 순',h:'망·그물망 // (그물로 걸러 내고 남은 알짜) 순 · net income(순이익)'},
+];
+
+/* 교재 순서: ①②③④ 섹션 = A·B·C·D 그룹 (10개씩) */
+const ORDER={
+21:'wild species bark nest certain greet seed predator scene scent shape fierce ripe lay male foster surface engage location store attract poison weigh automatic role exchange contain trail trait trial overcome tiny exceed bury stem diameter fascinate furthermore concentrate general',
+22:'ecosystem desert creature mature habitat maintain tide balance grand grant huge pile react exist shade element layer horizon observe block reason herd filter eco-friendly portion deadly tension migrate access excess expose shelter absorb incredible consist peak weed scare diminish yield',
+23:'climate landscape storm average drown happen rough geography effect affect valley influence damage lack predict aware correct earthquake due level shift narrow drought boundary alarming harsh cease estimate plane plain forecast incident continent spoil tremendous steep territory split flash deposit',
+24:'resource fossil supply common explanation nuclear material essential metal mental solve survive source produce electronic coal benefit vacuum treasure address shortage renewable potential native grain extreme typical contact content context aspect float ingredient ban witness solar starve attribute appliance plant',
+25:'environment release disaster destroy waste period announce occur quality quantity protect loss generate amazed harm intense amount marine permanent fine pesticide alternative respect vast refreshing responsible confuse separate delicate dedicate extinction superior consequence fabric interrupt concrete acknowledge considerable discard matter',
+26:'legal obey arrest report innocent caution charge violate law raw search raise aim criminal suspect neutral accuse firm aid interest complex organize plenty phenomenon mount found prove forbid contrast contract stamp secure conference urge confront persuade scan prohibit moreover determine',
+27:'politics facility vote candidate civil limit conservative belong official officer result survey notice guard profit deny opinion rural urban issue simplify committee accompany proportion household absence primary spot bother border available harbor garage notion suburb resident investigate reinforce govern rate',
+28:'economic budget possible income crisis trade offer specific several severe invest wealth provide merchant finance derive credit substitute debt bill cancel replace property refund branch recover hardship assemble proceed precede stir independent overall approach challenge impact accelerate collapse purchase account',
+29:'industry policy commercial convey international reveal increase depend transfer transform launch deliver measure claim satisfy opposite strategy import trap present consult organic manufacture negative peasant agriculture alter combine compete complete advance imply guarantee chief thrive gain overlook disappear initial domestic',
+30:'magazine article press advertise recent diverse document expert explore explode handle phrase annoy obvious mention entertain detail conflict thus medium depress demand identify award regret regard inquire script decline declare deceive external instantly norm analyze clarify defend reputation exclude net',
+};
+(function(){
+  for(const d of new Set(WORDS.map(x=>x.d))){
+    const list=(ORDER[d]||'').split(' ').filter(Boolean);
+    let next=list.length;
+    WORDS.filter(x=>x.d===d).forEach(x=>{const i=list.indexOf(x.w);x.o=i>=0?i+1:++next;});
+  }
+})();
+const GRPS=['A','B','C','D'];
+function grp(x){return GRPS[Math.min(3,Math.floor((x.o-1)/10))];}
+
+const GROUPS={root:{name:'어원',full:'어원으로 잡기'},image:{name:'이미지',full:'이미지로 잡기'},multi:{name:'여러 뜻',full:'한 단어 여러 뜻'},pair:{name:'헷갈리는 짝',full:'헷갈리는 짝'}};
+const GORDER=['root','image','multi','pair'];
+/* 뜻이 겹쳐 보기로 함께 나오면 안 되는 단어 */
+const CONFLICT=[['ripe','mature'],['maintain','balance'],['exceed','excess'],['attract','fascinate'],['species','creature'],['location','habitat'],['huge','grand'],['surface','shape'],['nest','habitat'],
+  ['source','resource'],['source','supply'],['common','general'],['witness','observe'],['attribute','trait'],['grain','seed'],['produce','yield'],
+  ['damage','spoil'],['shift','migrate'],['cease','ban'],['incident','happen'],['harsh','fierce'],['continent','territory'],['tremendous','huge'],['average','typical'],
+  ['amount','quantity'],['considerable','matter'],['consequence','matter'],['considerable','plenty'],['generate','occur'],['generate','happen'],['release','announce'],
+  ['separate','split'],['waste','discard'],['pesticide','poison'],['disaster','damage'],['intense','extreme'],['intense','harsh'],['quality','trait'],['quality','attribute'],
+  ['legal','law'],['criminal','suspect'],['accuse','report'],['charge','responsible'],['firm','certain'],['firm','secure'],['raise','mount'],['mount','peak'],['interest','benefit'],
+  ['official','officer'],['proceed','precede'],['survey','scan'],['notice','aware'],['notice','report'],['notice','announce'],['guard','protect'],['guard','secure'],['guard','shelter'],
+  ['profit','benefit'],['profit','income'],['opinion','notion'],['suburb','rural'],['committee','conference'],['proportion','rate'],['household','resident'],['spot','witness'],
+  ['resident','native'],['investigate','search'],['govern','politics'],['economic','finance'],['budget','finance'],['income','wealth'],['crisis','disaster'],['crisis','hardship'],
+  ['severe','intense'],['severe','extreme'],['severe','harsh'],['wealth','treasure'],['merchant','trade'],['derive','result'],['branch','stem'],['assemble','organize'],
+  ['overall','general'],['approach','contact'],['account','explanation'],['bill','charge'],
+  ['transfer','convey'],['transfer','deliver'],['convey','deliver'],['advance','approach'],['demand','charge'],['claim','declare'],['satisfy','content'],['opposite','contrast'],
+  ['strategy','policy'],['strategy','approach'],['import','trade'],['trap','net'],['present','award'],['present','release'],['consult','conference'],['negative','deny'],
+  ['peasant','agriculture'],['combine','assemble'],['guarantee','secure'],['disappear','extinction'],['initial','primary'],['domestic','household'],['domestic','native'],
+  ['press','urge'],['advertise','announce'],['advertise','commercial'],['annoy','bother'],['detail','specific'],['thus','consequence'],['medium','average'],
+  ['identify','determine'],['identify','spot'],['regard','respect'],['decline','diminish'],['declare','announce'],['defend','protect'],['defend','guard'],['defend','secure'],
+  ['shelter','habitat'],['habitat','resident'],['exist','present'],['incredible','amazed'],['yield','generate'],['yield','manufacture'],['scare','alarming']];
+const MODES={mix:'섞어서',mc:'뜻 고르기',spell:'철자 쓰기',listen:'듣고 쓰기'};
+const DAYS=[...new Set(WORDS.map(x=>x.d))].sort((a,b)=>a-b);
+const BYW=Object.fromEntries(WORDS.map(x=>[x.w,x]));
+const WD='일월화수목금토';
+const NUMS='①②③④';
+const HANGUL=/[ᄀ-ᇿ㄰-㆏가-힯]/;
+
+const CIRCLE='<svg class="mk" viewBox="0 0 48 48" aria-hidden="true"><path pathLength="1" d="M27 7C15 5 6 13 6 24c0 11 8 18 18 18 11 0 18-8 18-18C42 13 34 6 21 9"/></svg>';
+const SLASH='<svg class="mk" viewBox="0 0 48 48" aria-hidden="true"><path pathLength="1" d="M13 40L37 7"/></svg>';
+const CIRCLE_WIDE='<svg class="mk wide" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path vector-effect="non-scaling-stroke" d="M58 4C30 2 4 9 4 21c0 10 20 16 46 16 27 0 46-6 46-17C96 9 74 3 40 6"/></svg>';
+const SLASH_WIDE='<svg class="mk wide" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path vector-effect="non-scaling-stroke" d="M4 32L96 9"/></svg>';
+
+/* ---------- helpers ---------- */
+const $=(s,r=document)=>r.querySelector(s);
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function today(){return ymd(new Date());}
+function addDays(s,n){const [y,m,d]=s.split('-').map(Number);return ymd(new Date(y,m-1,d+n));}
+function fmtDate(s){const [y,m,d]=s.split('-').map(Number);return `${m}월 ${d}일 (${WD[new Date(y,m-1,d).getDay()]})`;}
+function hhmm(d){return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+function norm(s){return String(s).normalize('NFKC').trim().toLowerCase().replace(/\s+/g,' ').replace(/[‐-―−]/g,'-');}
+
+/* ---------- 발음 (기기에 내장된 영어 음성) ---------- */
+const TTS=('speechSynthesis' in window&&'SpeechSynthesisUtterance' in window)?window.speechSynthesis:null;
+let VOICE=null;
+function pickVoice(){
+  if(!TTS)return;
+  const vs=TTS.getVoices()||[];
+  VOICE=vs.find(v=>/^en[-_]US/i.test(v.lang)&&/Samantha|Google US|Aria|Jenny|Ava|Allison/i.test(v.name))
+    ||vs.find(v=>/^en[-_]US/i.test(v.lang))||vs.find(v=>/^en/i.test(v.lang))||null;
+}
+if(TTS){pickVoice();try{TTS.onvoiceschanged=pickVoice;}catch(e){}}
+function speak(text,rate){
+  if(!TTS)return;
+  try{
+    TTS.cancel();
+    const u=new SpeechSynthesisUtterance(String(text).replace(/-/g,' '));
+    u.lang='en-US';if(VOICE)u.voice=VOICE;u.rate=rate||0.85;
+    TTS.speak(u);
+  }catch(e){}
+}
+const SPK_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18.2 6.4a7.6 7.6 0 0 1 0 11.2"/></svg>';
+function spk(word,cls){return TTS?`<button type="button" class="spk${cls?' '+cls:''}" data-act="say" data-w="${esc(word)}" aria-label="${esc(word)} 발음 듣기">${SPK_ICON}</button>`:'';}
+
+/* ---------- 저장 (이 기기 브라우저) ---------- */
+const KEY='soyeon-vocab-v1';
+let canStore=true;
+function blank(){return{stats:{},review:{},played:{},game:{r:0.45,tpc:12000},prefs:{days:[String(DAYS[DAYS.length-1])],groups:GRPS.slice(),mode:'mix',n:20,sound:true}};}
+function load(){
+  const b=blank();let o=null;
+  try{const r=localStorage.getItem(KEY);if(r)o=JSON.parse(r);localStorage.setItem(KEY+'-t','1');localStorage.removeItem(KEY+'-t');}
+  catch(e){canStore=false;}
+  if(o&&typeof o==='object'){
+    if(o.stats&&typeof o.stats==='object')b.stats=o.stats;
+    if(o.review&&typeof o.review==='object')b.review=o.review;
+    if(o.played&&typeof o.played==='object')b.played=o.played;
+    if(o.game&&typeof o.game==='object')b.game=o.game;
+    /* 예전 점수 기록은 날짜별 횟수만 남기고 지움 */
+    if(Array.isArray(o.history))o.history.forEach(h=>{if(h&&h.kind!=='practice'&&h.date)b.played[h.date]=(b.played[h.date]||0)+1;});
+    if(o.prefs&&typeof o.prefs==='object')Object.assign(b.prefs,o.prefs);
+  }
+  const P=b.prefs,last=String(DAYS[DAYS.length-1]);
+  if(!(o&&o.prefs&&Array.isArray(o.prefs.days)))P.days=(P.day&&DAYS.includes(Number(P.day)))?[String(P.day)]:[last]; /* 예전 한 Day 설정 이어받기 */
+  delete P.day;
+  P.days=P.days.map(String).filter((d,i,a)=>DAYS.includes(Number(d))&&a.indexOf(d)===i).slice(-2);
+  if(!P.days.length)P.days=[last];
+  if(!Array.isArray(P.groups))P.groups=GRPS.slice();
+  P.groups=GRPS.filter(g=>P.groups.includes(g));
+  if(!P.groups.length)P.groups=GRPS.slice();
+  if(!MODES[P.mode]||(P.mode==='listen'&&!TTS))P.mode='mix';
+  if(typeof P.sound!=='boolean')P.sound=true;
+  if(P.n==='all')P.n=40;
+  if(P.n===15)P.n=20;
+  P.n=Number(P.n);
+  if(!(P.n>=10&&P.n<=80&&P.n%10===0))P.n=20;
+  return b;
+}
+let S=load();
+save(); /* 예전 점수 기록을 바로 지움 */
+function save(){if(!canStore)return;try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){canStore=false;}}
+
+function selPool(days,groups){return WORDS.filter(x=>days.includes(String(x.d))&&groups.includes(grp(x)));}
+function daysLabel(days){return 'Day '+days.slice().sort((a,b)=>a-b).join('·');}
+function groupsLabel(gs){return gs.length===GRPS.length?'전체':gs.join('·');}
+/* 문제 수 선택지: 10·20·40·80 중 고른 단어 수보다 적은 것 + 전체 */
+function nOptions(L){const o=[10,20,40,80].filter(v=>v<L);o.push(L);return o;}
+function effN(n,L){const o=nOptions(L),want=Math.min(n,L);let e=o[0];for(const v of o)if(v<=want)e=v;return e;}
+function dueWords(){const t=today();return Object.keys(S.review).filter(k=>BYW[k]&&S.review[k].due<=t).map(k=>BYW[k]);}
+function prunePlayed(){const cut=addDays(today(),-120);for(const k of Object.keys(S.played))if(k<cut)delete S.played[k];}
+function streak(){
+  const P=S.played;let d=today();
+  if(!P[d])d=addDays(d,-1);
+  let n=0;while(P[d]){n++;d=addDays(d,-1);}return n;
+}
+
+/* ---------- 문제 만들기 ---------- */
+function toks(m){return m.split(/[\s,;·()]+/).filter(t=>t.length>=2);}
+function clash(a,b){
+  if(a.w===b.w||a.m===b.m)return true;
+  if(CONFLICT.some(g=>g.includes(a.w)&&g.includes(b.w)))return true;
+  const ta=toks(a.m);return toks(b.m).some(t=>ta.includes(t));
+}
+function makeOptions(w,pos){
+  const L=w.m.length;
+  const cands=shuffle(WORDS.filter(x=>!clash(w,x))).sort((a,b)=>Math.abs(a.m.length-L)-Math.abs(b.m.length-L));
+  const pick=[];
+  for(const c of shuffle(cands.slice(0,9))){if(pick.length===3)break;if(!pick.some(p=>clash(p,c)))pick.push(c);}
+  for(const c of cands){if(pick.length===3)break;if(!pick.includes(c)&&!pick.some(p=>clash(p,c)))pick.push(c);}
+  const opts=pick.map(x=>({m:x.m,ok:false}));
+  opts.splice(pos,0,{m:w.m,ok:true});
+  return opts;
+}
+function buildItems(words,mode){
+  const cyc=(TTS&&S.prefs.sound)?['mc','spell','listen']:['mc','spell'];
+  const modes=mode==='mix'?shuffle(words.map((_,i)=>cyc[i%cyc.length])):words.map(()=>mode);
+  const mcN=modes.filter(m=>m==='mc').length;
+  const pos=shuffle(Array.from({length:mcN},(_,i)=>i%4)); /* 정답 번호를 ①~④에 고르게 */
+  let k=0;
+  return words.map((w,i)=>{
+    const it={w,mode:modes[i],done:false,ok:false,given:'',draft:''};
+    if(it.mode==='mc'){it.pos=pos[k++];it.opts=makeOptions(w,it.pos);}
+    return it;
+  });
+}
+
+/* ---------- 화면 ---------- */
+let cur='home',Q=null,R=null;
+const WV={day:String(DAYS[DAYS.length-1]),cover:false,view:'book'};
+
+function show(v){
+  cur=v;
+  ['home','words','quiz','result','game'].forEach(n=>{document.getElementById('v-'+n).hidden=(n!==v);});
+  $('#tabs').hidden=!['home','words'].includes(v);
+  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.v===v)));
+  if(v!=='quiz')$('#nextbar').hidden=true;
+  document.body.classList.toggle('in-quiz',v==='quiz');
+  window.scrollTo(0,0);
+}
+function render(v){if(v==='home')renderHome();else if(v==='words')renderWords();}
+
+function renderHeader(){
+  const d=new Date();
+  $('#bdate').textContent=`${d.getMonth()+1}월 ${d.getDate()}일 ${WD[d.getDay()]}요일`;
+  const s=streak(),el=$('#streak');
+  el.hidden=s<1;el.textContent=`연속 ${s}일`;
+}
+
+function segBtn(k,v,label,curv,act='pref'){
+  return `<button type="button" class="segb" data-act="${act}" data-k="${k}" data-val="${v}" aria-pressed="${v===curv}">${label}</button>`;
+}
+function togBtn(act,v,label,on){
+  return `<button type="button" class="segb" data-act="${act}" data-val="${v}" aria-pressed="${on}">${label}</button>`;
+}
+function togglePref(k,v){
+  const P=S.prefs,arr=P[k],i=arr.indexOf(v);
+  if(i>=0){
+    if(arr.length===1){toast(k==='days'?'Day는 하나 이상 골라야 해요.':'그룹은 하나 이상 골라야 해요.');return;}
+    arr.splice(i,1);
+  }else{
+    arr.push(v);
+    if(k==='days'&&arr.length>2){const out=arr.shift();toast(`Day는 2개까지예요. Day ${out}는 뺐어요.`);}
+  }
+  if(k==='groups')P.groups=GRPS.filter(g=>arr.includes(g));
+  save();renderHome();
+}
+
+function renderHome(){
+  const t=today(),due=dueWords(),P=S.prefs,pl=selPool(P.days,P.groups),L=pl.length,en=effN(P.n,L);
+  const waiting=Object.keys(S.review).filter(k=>BYW[k]).length-due.length;
+  const cnt=S.played[t]||0;
+  const unseen=pl.filter(x=>!(S.stats[x.w]&&S.stats[x.w].seen)).length;
+  let h='';
+  if(!canStore)h+=`<p class="warn">이 화면에서는 복습할 단어가 저장되지 않아요. 휴대폰 브라우저에서 링크를 직접 열어 주세요.</p>`;
+  h+=cnt
+    ?`<p class="status done"><span class="dot"></span><span>오늘 <b>${cnt}번</b> 했어요</span></p>`
+    :`<p class="status"><span class="dot"></span><span>오늘은 아직 안 했어요</span></p>`;
+  if(due.length){
+    h+=`<section class="panel rev">
+      <div class="rev-top"><div><p class="eyebrow">복습 먼저</p><h2 class="h2">다시 볼 단어 <span class="pen-n">${due.length}</span>개</h2></div><button class="sbtn" data-act="tidy" aria-expanded="${HV.tidy}">정리</button></div>
+      ${HV.tidy?tidyBox():''}
+      <p class="sub">복습에서 두 번 맞히면 목록에서 빠져요.</p>
+      <button class="btn pen" data-act="review">복습 시작</button>
+    </section>`;
+  }
+  h+=`<section class="panel">
+    <h2 class="h2">새 테스트</h2>
+    <div class="field"><p class="lab">Day<span class="lab-s">2개까지</span></p><div class="seg grid5">${DAYS.map(d=>togBtn('pday',String(d),String(d),P.days.includes(String(d)))).join('')}</div></div>
+    <div class="field"><p class="lab">그룹<span class="lab-s">교재 순서대로 10개씩</span></p><div class="seg grid4">${GRPS.map((g,i)=>togBtn('pgroup',g,`${g}<small>${i*10+1}~${i*10+10}</small>`,P.groups.includes(g))).join('')}</div></div>
+    <div class="field"><p class="lab">방식</p><div class="seg">${Object.entries(MODES).filter(([k])=>k!=='listen'||TTS).map(([k,v])=>segBtn('mode',k,v,P.mode)).join('')}</div></div>
+    <div class="field"><p class="lab">문제 수</p><div class="seg">${nOptions(L).map(v=>togBtn('pn',String(v),v+'개'+(v===L?'<small>전체</small>':''),v===en)).join('')}</div></div>
+    <p class="pool">${daysLabel(P.days)} · ${P.groups.join('·')} 그룹 <b>${L}개</b> 중 <b>${en}개</b>를 랜덤으로 물어요. 아직 안 본 단어 ${unseen}개.</p>
+    <button class="btn" data-act="start">테스트 시작</button>
+  </section>`;
+  const gt=Math.min(10,L);
+  h+=`<section class="panel">
+    <div><p class="eyebrow">대결</p><h2 class="h2">먼저 ${gt}개 맞히기</h2></div>
+    <p class="sub">위에서 고른 범위의 단어로 철자 쓰기 대결을 해요. 상대보다 먼저 ${gt}개를 맞히면 이겨요.</p>
+    <button class="btn ghost" data-act="game">대결 시작</button>
+  </section>`;
+  if(!due.length&&waiting>0){
+    h+=`<p class="note">복습 대기 ${waiting}개 · 날짜가 되면 여기 위에 나와요.<button class="linkbtn inline" data-act="tidy" aria-expanded="${HV.tidy}">정리</button></p>`;
+    if(HV.tidy)h+=tidyBox();
+  }
+  $('#v-home').innerHTML=h;
+}
+
+/* ---------- 퀴즈 ---------- */
+function startQuiz(words,kind,label,mode){
+  if(!words.length)return;
+  Q={items:buildItems(shuffle(words.slice()),mode),i:0,kind,label,mode,answeredAt:0,quitAsk:false};
+  show('quiz');renderQ();focusSpell();autoSpeak();
+}
+function autoSpeak(){
+  if(!Q||!TTS)return;const it=Q.items[Q.i];
+  if(it.done)return;
+  if(it.mode==='listen'||(it.mode==='mc'&&S.prefs.sound))speak(it.w.w);
+}
+function startNew(){
+  const P=S.prefs,pl=selPool(P.days,P.groups),n=effN(P.n,pl.length);
+  startQuiz(shuffle(pl.slice()).slice(0,n),'new',`${daysLabel(P.days)} ${groupsLabel(P.groups)}`,P.mode);
+}
+function startReview(){startQuiz(shuffle(dueWords()).slice(0,20),'review','복습','mix');}
+
+/* 힌트: 세 칸마다 한 글자 + 마지막 글자 */
+function hintIdx(word){const s=new Set();for(let i=0;i<word.length;i++)if(i%3===0&&word[i]!=='-')s.add(i);s.add(word.length-1);return s;}
+function hintPattern(word){const s=hintIdx(word);return [...word].map((c,i)=>c==='-'?'-':s.has(i)?c:'_').join(' ');}
+function tiles(word,typed,first=true,hint=false){
+  const n=Math.max(word.length,typed.length),hs=hint?hintIdx(word):new Set();let h='';
+  for(let i=0;i<n;i++){
+    const c=typed[i];let cls='tile',ch='';
+    if(c!==undefined){ch=c;cls+=' on';}
+    else if(hs.has(i)){ch=word[i];cls+=' ghost hinted';}
+    else if(i===0&&first){ch=word[0];cls+=' ghost';}
+    else if(word[i]==='-'){ch='-';cls+=' ghost';}
+    if(i>=word.length)cls+=' over';
+    if(i===typed.length)cls+=' cur';
+    h+=`<span class="${cls}">${esc(ch)}</span>`;
+  }
+  return `<div class="tiles" id="tiles" lang="en" style="--n:${n}" aria-hidden="true">${h}</div>`;
+}
+function typedOf(v){return String(v).replace(/^\s+/,'').toLowerCase();}
+
+function spellResult(it){
+  const w=it.w.w;
+  if(it.ok)return `<div class="sres"><p><span class="lbl">정답</span><span class="sword" lang="en">${esc(w)}${CIRCLE_WIDE}</span></p></div>`;
+  const g=it.given;
+  const diff=[...w].map((c,i)=>`<span class="${g[i]===c?'':'miss'}">${esc(c)}</span>`).join('');
+  return `<div class="sres">
+    <p><span class="lbl">내 답</span>${g?`<span class="given" lang="en">${esc(g)}${SLASH_WIDE}</span>`:`<span class="given empty">모르겠어요</span>`}</p>
+    <p><span class="lbl">정답</span><span class="sword" lang="en">${diff}</span></p>
+  </div>`;
+}
+function feedback(it){
+  const w=it.w;
+  const later=Q.kind==='practice'?'':' · 내일 복습에 다시 나와요';
+  const head=it.skip?`<p class="fb-h skip">이 문제는 빼고 채점해요</p>`
+    :it.ok?(it.hint?`<p class="fb-h ok">힌트 보고 맞혔어요${later}</p>`:`<p class="fb-h ok">정답이에요</p>`)
+    :`<p class="fb-h no">아쉬워요${later}</p>`;
+  return `<div class="fb">${head}
+    <p class="fb-w"><b lang="en">${esc(w.w)}</b>${spk(w.w)}${w.p?`<span class="ipa">[${esc(w.p)}]</span>`:''}<span class="fb-m">${esc(w.m)}</span></p>
+    <div class="hint ${w.g}"><span class="hint-l">단어 지도 · ${GROUPS[w.g].full}</span>${esc(w.h)}</div>
+    ${it.ok?'':`<button class="linkbtn oops" data-act="oops">${it.skip?'다시 채점에 넣기':'잘못 눌렀어요 · 이 문제 빼기'}</button>`}
+  </div>`;
+}
+
+function renderQ(){
+  const it=Q.items[Q.i],w=it.w,n=Q.items.length,done=it.done;
+  const prog=Q.i+(done?1:0);
+  const head=Q.quitAsk
+    ?`<div class="quitask"><p>지금 그만하면 이번 테스트는 복습에 반영되지 않아요.</p><div class="row"><button class="sbtn" data-act="quit-no">계속하기</button><button class="sbtn danger" data-act="quit-yes">그만하기</button></div></div>`
+    :`<div class="qbar"><button class="sbtn" data-act="quit">그만</button>
+       <div class="prog" role="progressbar" aria-label="진행" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${prog}"><span style="width:${(prog/n*100).toFixed(1)}%"></span></div>
+       <span class="qcount">${Q.i+1} / ${n}</span>
+       ${TTS?`<button class="sbtn" data-act="sound" aria-pressed="${S.prefs.sound}" aria-label="단어 자동으로 읽어 주기">${S.prefs.sound?'소리 켬':'소리 끔'}</button>`:''}</div>`;
+  let body=`<div class="chiprow"><span class="chip ${w.g}">${GROUPS[w.g].name}</span><span class="dayl">Day ${w.d} · ${grp(w)}그룹${Q.kind==='review'?' · 복습':Q.kind==='practice'?' · 다시 풀기':''}</span></div>`;
+  if(it.mode==='mc'){
+    body+=`<p class="ask">뜻을 고르세요</p>
+      <div class="hw"><div class="hwrow"><span class="headword" lang="en">${esc(w.w)}</span>${spk(w.w)}</div>${w.p?`<span class="ipa">[${esc(w.p)}]</span>`:''}</div>
+      <div class="opts">${it.opts.map((o,k)=>{
+        let cls='opt',mark='';
+        if(done){if(o.ok)cls+=' right';if(k===it.choice){if(o.ok)mark=CIRCLE;else{cls+=' wrong';mark=SLASH;}}}
+        return `<button class="${cls}" data-act="opt" data-k="${k}"${done?' disabled':''}><span class="num ringed">${NUMS[k]}${mark}</span><span class="otx">${esc(o.m)}</span></button>`;
+      }).join('')}</div>`;
+  }else{
+    const L=it.mode==='listen';
+    body+=L
+      ?`<p class="ask">듣고 쓰세요</p>
+        <div class="listen">${spk(w.w,'big')}<button type="button" class="sbtn" data-act="say-slow">천천히</button></div>
+        <p class="lmean">뜻 <b>${esc(w.m)}</b></p>`
+      :`<p class="ask">영어로 쓰세요</p><p class="mprompt">${esc(w.m)}</p>`;
+    if(!done){
+      body+=tiles(w.w,typedOf(it.draft),false,it.hint)+
+        (it.hint?`<p class="hintline">힌트<span lang="en">${esc(hintPattern(w.w))}</span></p>`
+          :`<p class="len">${w.w.length}글자${w.w.includes('-')?' (하이픈 포함)':''}</p>`)+`
+        <form id="spellForm" class="spell" autocomplete="off">
+          <input id="spellIn" type="text" lang="en" maxlength="${w.w.length+3}" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" aria-label="영어 단어 쓰기" value="${esc(it.draft)}">
+          <button class="btn" type="submit">확인</button>
+        </form>
+        <p class="imewarn" id="imeWarn"${HANGUL.test(it.draft)?'':' hidden'}>영어 자판으로 바꿔서 써 주세요.</p>
+        <button class="linkbtn" data-act="giveup">${it.hint?'그래도 모르겠어요':'모르겠어요'}</button>`;
+    }else body+=spellResult(it);
+  }
+  if(done)body+=feedback(it);
+  $('#v-quiz').innerHTML=head+`<article class="qcard">${body}</article>`;
+  const nb=$('#nextbar');nb.hidden=!done;
+  $('#nextBtn').textContent=Q.i===n-1?'결과 보기':'다음';
+}
+function focusSpell(){const el=$('#spellIn');if(el){try{el.focus({preventScroll:true});}catch(e){el.focus();}}}
+function markDone(){
+  Q.answeredAt=Date.now();renderQ();
+  const it=Q.items[Q.i];if(it.mode==='spell'&&S.prefs.sound)speak(it.w.w);
+}
+function choose(k){const it=Q.items[Q.i];if(it.done||it.mode!=='mc')return;it.done=true;it.choice=k;it.ok=it.opts[k].ok;it.given=it.opts[k].m;markDone();}
+function submitSpell(v){
+  const it=Q.items[Q.i];if(it.done)return;
+  if(HANGUL.test(v)){$('#imeWarn').hidden=false;focusSpell();return;}
+  const g=norm(v);if(!g){focusSpell();return;}
+  it.done=true;it.given=g;it.ok=(g===it.w.w.toLowerCase());
+  $('#spellIn').blur();markDone();
+}
+function giveup(){
+  const it=Q.items[Q.i];if(it.done)return;
+  if(!it.hint){it.hint=true;renderQ();focusSpell();return;} /* 첫 번째는 힌트 */
+  it.done=true;it.given='';it.ok=false;markDone();
+}
+function next(){
+  if(!Q)return;const it=Q.items[Q.i];if(!it.done)return;
+  if(Q.i>=Q.items.length-1){finish();return;}
+  Q.i++;Q.quitAsk=false;renderQ();window.scrollTo(0,0);focusSpell();autoSpeak();
+}
+
+function finish(){
+  const t=today(),now=new Date();
+  const items=Q.items.filter(it=>!it.skip),skipped=Q.items.length-items.length;
+  const total=items.length,correct=items.filter(it=>it.ok).length;
+  const wrong=items.filter(it=>!it.ok).map(it=>it.w);
+  const hinted=items.filter(it=>it.ok&&it.hint).map(it=>it.w);
+  if(Q.kind!=='practice'){
+    for(const it of items){
+      const k=it.w.w;
+      const st=S.stats[k]||(S.stats[k]={seen:0,right:0,wrong:0,last:''});
+      st.seen++;st.last=t;
+      if(!it.ok)st.wrong++;else if(it.hint)st.hint=(st.hint||0)+1;else st.right++;
+      const r=S.review[k];
+      if(!it.ok||it.hint)S.review[k]={due:addDays(t,1),streak:0}; /* 힌트 보고 맞힌 단어도 내일 다시 */
+      else if(r&&r.due<=t){r.streak=(r.streak||0)+1;if(r.streak>=2)delete S.review[k];else r.due=addDays(t,2);}
+    }
+    S.played[t]=(S.played[t]||0)+1;prunePlayed(); /* 점수는 남기지 않고 한 날짜만 셈 */
+    save();
+  }
+  const rec={date:t,time:hhmm(now),label:Q.label,mode:Q.mode,total,correct,skipped,wrong:wrong.map(x=>x.w),hinted:hinted.map(x=>x.w)};
+  R={rec,kind:Q.kind,label:Q.label,mode:Q.mode,total,correct,wrong,hinted,skipped};
+  Q=null;show('result');renderResult();renderHeader();
+}
+
+function renderResult(){
+  const {total,correct,wrong,hinted,kind,label,mode,skipped}=R,ratio=total?correct/total:0;
+  const again=wrong.concat(hinted),hs=new Set(hinted.map(w=>w.w));
+  const msg=!total?'모든 문제를 뺐어요.':ratio===1&&!hinted.length?'다 맞았어요!':ratio>=.8?'거의 다 외웠어요.':ratio>=.5?'반 넘게 맞혔어요.':'틀린 단어가 곧 외울 단어예요.';
+  const parts=[];if(wrong.length)parts.push(`틀린 ${wrong.length}개`);if(hinted.length)parts.push(`힌트 받은 ${hinted.length}개`);
+  const tail=kind!=='practice'&&parts.length?` ${parts.join('와 ')}는 내일 복습에 나와요.`:'';
+  let h=`<div class="res">
+    <p class="eyebrow">${esc(label)} · ${MODES[mode]}</p>
+    <p class="score" aria-label="${total}문제 중 ${correct}개 정답"><span class="sc-n">${correct}</span><span class="sc-d">/ ${total}</span>${ratio===1?CIRCLE_WIDE:''}</p>
+    <p class="res-msg">${msg}${tail}${skipped&&total?` 잘못 눌러 뺀 ${skipped}문제는 채점하지 않았어요.`:''}</p>
+  </div>`;
+  if(again.length){
+    h+=`<section class="panel"><h2 class="sh">다시 볼 단어 ${again.length}개</h2><ul class="wlist">${again.map(w=>`<li>
+      <p class="fb-w"><b lang="en">${esc(w.w)}</b>${spk(w.w)}${hs.has(w.w)?'<span class="tag">힌트</span>':''}<span class="fb-m">${esc(w.m)}</span></p>
+      <div class="hint ${w.g}"><span class="hint-l">단어 지도 · ${GROUPS[w.g].full}</span>${esc(w.h)}</div></li>`).join('')}</ul></section>`;
+  }
+  h+=`<div class="actions">
+    ${kind!=='practice'?`<button class="btn" data-act="copy-result">결과 복사해서 엄마에게 보내기</button><div class="copyfb" id="fb-result" hidden></div>`:''}
+    ${again.length?`<button class="btn ghost" data-act="retry">다시 볼 단어만 풀기</button>`:''}
+    <button class="btn ghost" data-act="home">처음으로</button>
+  </div>`;
+  $('#v-result').innerHTML=h;
+}
+
+/* ---------- 단어 보기 ---------- */
+function renderWords(){
+  const ws=WORDS.filter(x=>String(x.d)===WV.day),book=WV.view==='book',cov=WV.cover?' cover':'';
+  let h=`<div class="field"><p class="lab">Day</p><div class="seg grid5">${DAYS.map(d=>segBtn('wday',String(d),String(d),WV.day,'wday')).join('')}</div></div>
+    <div class="wtools"><div class="seg">${togBtn('wview','book','교재 순서',book)}${togBtn('wview','map','묶음별',!book)}</div>
+    <button type="button" class="segb" data-act="cover" aria-pressed="${WV.cover}">뜻 가리기</button></div>`;
+  if(WV.cover)h+=`<p class="note">단어를 누르면 뜻이 보여요.</p>`;
+  const row=x=>`<li class="wrow" data-act="reveal"${WV.cover?' tabindex="0" role="button"':''}>
+        <div class="wtop">${book?`<span class="no">${String(x.o).padStart(2,'0')}</span>`:''}<span class="ww" lang="en">${esc(x.w)}</span>${x.p?`<span class="ipa">[${esc(x.p)}]</span>`:''}${book?`<span class="chip ${x.g}">${GROUPS[x.g].name}</span>`:''}${S.review[x.w]?'<span class="rv">복습</span>':''}${spk(x.w)}</div>
+        <p class="wm">${esc(x.m)}</p><p class="wh">${esc(x.h)}</p></li>`;
+  if(book){
+    GRPS.forEach((G,i)=>{
+      const list=ws.filter(x=>grp(x)===G).sort((a,b)=>a.o-b.o);if(!list.length)return;
+      h+=`<div class="gsec book"><h3 class="gh">${G} 그룹<small>${i*10+1}~${i*10+list.length}</small></h3><ul class="wl${cov}">${list.map(row).join('')}</ul></div>`;
+    });
+  }else{
+    for(const g of GORDER){
+      const list=ws.filter(x=>x.g===g);if(!list.length)continue;
+      h+=`<div class="gsec ${g}"><h3 class="gh">${GROUPS[g].full}<small>${list.length}</small></h3><ul class="wl${cov}">${list.map(row).join('')}</ul></div>`;
+    }
+  }
+  $('#v-words').innerHTML=h;
+}
+
+/* ---------- 복사 ---------- */
+function resultText(){
+  const r=R&&R.rec;if(!r)return '';
+  const lines=[`[단어 테스트] ${fmtDate(r.date)} ${r.time}`,`${r.label} · ${MODES[r.mode]} · ${r.correct}/${r.total}`];
+  if(r.wrong.length)lines.push(`틀린 단어: ${r.wrong.join(', ')}`);
+  if(r.hinted&&r.hinted.length)lines.push(`힌트 보고 맞힌 단어: ${r.hinted.join(', ')}`);
+  if(r.skipped)lines.push(`잘못 눌러 뺀 문제: ${r.skipped}개`);
+  if(r.total&&!r.wrong.length&&!(r.hinted&&r.hinted.length))lines.push('다 맞았어요');
+  return lines.join('\n');
+}
+let toastT=0;
+function toast(msg){const el=$('#toast');el.textContent=msg;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{el.hidden=true;},2600);}
+function copyText(text,fbId){
+  const fallback=()=>{const box=document.getElementById(fbId);if(!box)return;
+    box.hidden=false;box.innerHTML=`<textarea id="${fbId}-ta" rows="4" readonly aria-label="복사할 내용">${esc(text)}</textarea>`;
+    const ta=box.querySelector('textarea');ta.focus();ta.select();toast('아래 글을 길게 눌러 복사해 주세요.');};
+  try{
+    navigator.clipboard.writeText(text).then(()=>toast('복사했어요. 카톡에 붙여 넣으면 돼요.'),fallback);
+  }catch(e){fallback();}
+}
+
+/* ---------- 복습 정리 ---------- */
+const HV={tidy:false};
+function revKeys(){return Object.keys(S.review).filter(k=>BYW[k]);}
+function outKeys(){const P=S.prefs;return revKeys().filter(k=>!P.days.includes(String(BYW[k].d)));}
+function tidyBox(){
+  const P=S.prefs,all=revKeys(),out=outKeys();
+  const od=[...new Set(out.map(k=>BYW[k].d))].sort((a,b)=>a-b);
+  return `<div class="tidy">
+    <p class="tidy-q">다시 볼 단어 ${all.length}개를 어떻게 할까요?</p>
+    ${out.length?`<button class="btn" data-act="tidy-keep">${daysLabel(P.days)} 단어만 남기기<small>Day ${od.join('·')} 단어 ${out.length}개를 지워요</small></button>`:''}
+    <button class="btn${out.length?' ghost':''}" data-act="tidy-all">모두 지우기<small>${all.length}개를 지우고 새로 시작해요</small></button>
+    <button class="linkbtn" data-act="tidy-no">취소</button>
+  </div>`;
+}
+
+/* ---------- 대결: 먼저 10개 맞히기 ---------- */
+const OP_NAMES=['민트초코','별빛토끼','하늘곰','레몬사탕','초코칩','새벽달','냥냥펀치','딸기우유','파란고래','지우07','서준이','하린','tomato_j','바다별','솜사탕','dolphin22','도토리','노을','코코넛','라임','윤슬','봄비','유니','감자칩'];
+let G=null,lastOp='';
+function rnd(a,b){return a+Math.random()*(b-a);}
+function gameMeta(){
+  if(!S.game||typeof S.game!=='object')S.game={};
+  const g=S.game;
+  if(typeof g.r!=='number'||!isFinite(g.r))g.r=0.45;        /* 상대 실력 0.1~0.9: 이기면 오르고 지면 내려감 */
+  if(typeof g.tpc!=='number'||!isFinite(g.tpc))g.tpc=12000; /* 한 개 맞히는 데 걸리는 평균 시간(ms) */
+  return g;
+}
+function gFocus(){const el=$('#gIn');if(el&&document.activeElement!==el){try{el.focus({preventScroll:true});}catch(e){el.focus();}}}
+function startGame(){
+  const P=S.prefs,pool=selPool(P.days,P.groups);if(!pool.length)return;
+  if(G&&G.tick)clearInterval(G.tick);
+  const gm=gameMeta();
+  let name;do{name=OP_NAMES[Math.floor(Math.random()*OP_NAMES.length)];}while(name===lastOp);lastOp=name;
+  G={pool,target:Math.min(10,pool.length),label:`${daysLabel(P.days)} ${groupsLabel(P.groups)}`,
+    k:(1.2-0.4*gm.r)*rnd(0.88,1.14), /* 판마다 컨디션이 조금씩 다름 */
+    me:{queue:shuffle(pool.slice()),cur:null,correct:0,missed:new Map(),done:new Set(),busy:false},
+    op:{name,correct:0,steps:null,phase:0,left:0,outcome:'',status:'',rest:0},
+    state:'count',countLeft:3000,active:0,last:performance.now(),ask:false,over:false,tick:0};
+  show('game');renderGame();
+  gFocus(); /* 버튼을 누른 순간에 입력칸을 잡아야 휴대폰 자판이 열려요 */
+  G.tick=setInterval(gameTick,100);
+}
+function renderGame(){
+  const o=G.op,T=G.target;
+  $('#v-game').innerHTML=`<div class="board">
+    <div class="prow me"><span class="av" aria-hidden="true">나</span><div class="pmid"><p class="pname">나</p><div class="pbar"><span id="meBar"></span></div></div><p class="pcnt"><span id="meCnt">0</span><small>/${T}</small></p></div>
+    <div class="prow op"><span class="av" aria-hidden="true">${esc(o.name[0])}</span><div class="pmid"><p class="pname"><span class="nm">${esc(o.name)}</span><span class="pstat" id="opStat"></span></p><div class="pbar"><span id="opBar"></span></div></div><p class="pcnt"><span id="opCnt">0</span><small>/${T}</small></p></div>
+  </div>
+  <article class="qcard">
+    <div id="gHead"><p class="ask">대결 상대 <b>${esc(o.name)}</b> · 먼저 ${T}개 맞히면 이겨요</p><p class="gnum" id="gNum">3</p></div>
+    <div id="gQ" hidden><p class="ask">영어로 쓰세요</p><p class="mprompt" id="gPrompt"></p></div>
+    <div id="gTiles"></div>
+    <p class="len" id="gLen"></p>
+    <form id="gForm" class="spell" autocomplete="off">
+      <input id="gIn" type="text" lang="en" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" aria-label="영어 단어 쓰기">
+      <button class="btn" type="submit">확인</button>
+    </form>
+    <p class="imewarn" id="gWarn" hidden>영어 자판으로 바꿔서 써 주세요.</p>
+    <p class="gfb" id="gFb" aria-live="polite"></p>
+    <button class="linkbtn" data-act="gskip">모르겠어요 · 넘기기</button>
+  </article>
+  <div class="gfoot" id="gFoot"><button class="sbtn" data-act="gquit">그만하기</button></div>`;
+}
+function gameTick(){
+  if(!G||G.over)return;
+  const now=performance.now(),dt=Math.min(now-G.last,400);G.last=now;
+  if(document.hidden||G.ask)return; /* 다른 앱으로 나가 있거나 그만할지 묻는 동안은 멈춤 */
+  if(G.state==='count'){
+    G.countLeft-=dt;
+    if(G.countLeft>0){$('#gNum').textContent=String(Math.ceil(G.countLeft/1000));return;}
+    G.state='play';$('#gHead').hidden=true;$('#gQ').hidden=false;
+    opNext(true);gNext();gFocus();return;
+  }
+  if(G.state!=='play')return;
+  G.active+=dt;
+  opAdvance(dt);
+}
+/* 나 */
+function gNext(){
+  const m=G.me;
+  if(!m.queue.length){let r=G.pool.filter(x=>!m.done.has(x.w));if(!r.length)r=G.pool.slice();m.queue=shuffle(r);}
+  if(m.cur&&m.queue.length>1&&m.queue[0].w===m.cur.w)m.queue.push(m.queue.shift());
+  m.cur=m.queue.shift();m.busy=false;
+  const el=$('#gIn');el.value='';el.maxLength=m.cur.w.length+3;
+  $('#gPrompt').textContent=m.cur.m;
+  $('#gTiles').innerHTML=tiles(m.cur.w,'',false,false);
+  $('#gLen').textContent=`${m.cur.w.length}글자${m.cur.w.includes('-')?' (하이픈 포함)':''}`;
+  const fb=$('#gFb');fb.className='gfb';fb.textContent='';$('#gWarn').hidden=true;
+}
+function gInput(el){
+  if(!G||G.state!=='play'||G.me.busy||!G.me.cur){el.value='';return;}
+  $('#gTiles').innerHTML=tiles(G.me.cur.w,typedOf(el.value),false,false);
+  $('#gWarn').hidden=!HANGUL.test(el.value);
+}
+function gSubmit(skip){
+  if(!G||G.over||G.state!=='play')return;
+  const m=G.me;if(m.busy||!m.cur)return;
+  const el=$('#gIn'),v=el.value;
+  if(!skip){
+    if(HANGUL.test(v)){$('#gWarn').hidden=false;gFocus();return;}
+    if(!norm(v)){gFocus();return;}
+  }
+  const w=m.cur,ok=!skip&&norm(v)===w.w.toLowerCase(),fb=$('#gFb');
+  m.busy=true;
+  if(ok){
+    m.correct++;m.done.add(w.w);
+    $('#meCnt').textContent=m.correct;$('#meBar').style.width=(m.correct/G.target*100)+'%';popAt('#meCnt');
+    fb.className='gfb ok';fb.textContent='정답!';
+    if(m.correct>=G.target){endGame(true);return;}
+  }else{
+    m.missed.set(w.w,w);
+    const q=m.queue;q.splice(Math.min(3,q.length),0,w); /* 조금 뒤에 다시 나와요 */
+    fb.className='gfb no';fb.innerHTML=`${skip?'':'아쉬워요 · '}정답은 <b lang="en">${esc(w.w)}</b>`;
+  }
+  setTimeout(()=>{if(G&&!G.over&&G.me.cur===w){gNext();gFocus();}},ok?500:1700);
+  gFocus();
+}
+function popAt(sel){const n=$(sel);if(!n)return;const s=document.createElement('span');s.className='pop';s.textContent='+1';n.parentElement.appendChild(s);setTimeout(()=>s.remove(),950);}
+/* 상대: 읽고, 치고, 가끔 머뭇거리고, 틀리거나 넘기기도 함 */
+function opEstTPC(){const gm=gameMeta(),e=(gm.tpc*2+G.active)/(2+G.me.correct);return Math.max(gm.tpc*0.6,Math.min(e,gm.tpc*1.6));} /* 소연이가 한 문제에서 오래 막혀도 상대가 같이 멈추지는 않게 */
+function opNext(first){
+  const o=G.op,gm=gameMeta();
+  const w=G.pool[Math.floor(Math.random()*G.pool.length)],L=w.w.length;
+  let pc=0.6+0.3*gm.r-(L>=9?0.07:0)-(L>=12?0.06:0);pc=Math.max(0.45,Math.min(0.93,pc));
+  const lead=o.correct-G.me.correct;
+  let D=opEstTPC()*pc*G.k*rnd(0.7,1.35)/1.06-950; /* 한 개 맞히는 시간이 소연이와 비슷해지게 */
+  if(lead>=3)D*=1.25;else if(lead<=-3)D*=0.85;
+  D=Math.max(1500+L*100,Math.min(D,28000));
+  const x=Math.random(),out=x<pc?'ok':x<pc+(1-pc)*0.6?'no':'skip';
+  if(out==='skip')D*=1.3;
+  const read=D*rnd(0.18,0.32),steps=[['',read+(first?rnd(300,900):0)]];
+  if(out==='skip')steps.push(['생각 중…',D-read]);
+  else{
+    const t=D-read;
+    if(Math.random()<0.28){const a=t*rnd(0.2,0.45),pz=t*rnd(0.2,0.35);steps.push(['입력 중…',a],['생각 중…',pz],['입력 중…',t-a-pz]);}
+    else steps.push(['입력 중…',t]);
+  }
+  Object.assign(o,{steps,phase:0,left:steps[0][1],outcome:out,status:steps[0][0],rest:0});
+  updateOp();
+}
+function opAdvance(dt){
+  const o=G.op;
+  if(o.rest>0){o.rest-=dt;if(o.rest<=0)opNext(false);return;}
+  o.left-=dt;
+  while(o.left<=0){
+    o.phase++;
+    if(o.phase>=o.steps.length){opFinish();return;}
+    o.left+=o.steps[o.phase][1];o.status=o.steps[o.phase][0];
+  }
+  updateOp();
+}
+function opFinish(){
+  const o=G.op;
+  if(o.outcome==='ok'){o.correct++;o.status='맞힘';popAt('#opCnt');}
+  else o.status=o.outcome==='no'?'틀림':'넘김';
+  o.rest=rnd(700,1200);updateOp();
+  if(o.correct>=G.target)endGame(false);
+}
+function updateOp(){
+  const o=G.op;$('#opCnt').textContent=o.correct;$('#opBar').style.width=(o.correct/G.target*100)+'%';
+  const st=$('#opStat');
+  if(st&&st.textContent!==o.status){st.textContent=o.status;st.className='pstat'+(o.status==='맞힘'?' good':(o.status==='틀림'||o.status==='넘김')?' bad':'');}
+}
+function endGame(win){
+  if(!G||G.over)return;
+  G.over=true;G.state='over';clearInterval(G.tick);
+  const gm=gameMeta();
+  gm.r=Math.max(0.1,Math.min(0.9,gm.r+(win?0.06:-0.06)));
+  if(G.me.correct>=3)gm.tpc=Math.round(gm.tpc*0.6+(G.active/G.me.correct)*0.4);
+  save();
+  const el=$('#gIn');if(el)el.blur();
+  const g=G;setTimeout(()=>{if(G===g)renderGameOver(win);},win?700:1000);
+}
+function renderGameOver(win){
+  const me=G.me.correct,op=G.op.correct,d=Math.abs(me-op),missed=[...G.me.missed.values()];
+  const msg=win?(d>=3?'여유 있게 이겼어요.':'아슬아슬하게 이겼어요.'):(d<=2?'정말 아깝게 졌어요.':'다음 판에 다시 붙어 봐요.');
+  let h=`<div class="res">
+    <p class="eyebrow">대결 · ${esc(G.label)}</p>
+    <p class="gwin${win?' win':''}">${win?'이겼어요!':'졌어요'}${win?CIRCLE_WIDE:''}</p>
+    <p class="gscore"><span>나 <b>${me}</b></span><span>:</span><span><b>${op}</b> ${esc(G.op.name)}</span></p>
+    <p class="res-msg">${msg}</p>
+  </div>`;
+  if(missed.length){
+    h+=`<section class="panel"><h2 class="sh">이번 판에서 놓친 단어 ${missed.length}개</h2><ul class="wlist">${missed.map(w=>`<li>
+      <p class="fb-w"><b lang="en">${esc(w.w)}</b>${spk(w.w)}<span class="fb-m">${esc(w.m)}</span></p>
+      <div class="hint ${w.g}"><span class="hint-l">${GROUPS[w.g].full}</span>${esc(w.h)}</div></li>`).join('')}</ul></section>`;
+  }
+  h+=`<div class="actions"><button class="btn" data-act="game">한 판 더</button><button class="btn ghost" data-act="home">처음으로</button></div>`;
+  $('#v-game').innerHTML=h;window.scrollTo(0,0);
+}
+function quitGame(){if(G){G.over=true;clearInterval(G.tick);}G=null;show('home');renderHome();}
+
+/* ---------- 이벤트 ---------- */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const a=b.dataset.act;
+  if(a==='tab'){show(b.dataset.v);render(b.dataset.v);}
+  else if(a==='pref'){const k=b.dataset.k,v=b.dataset.val;S.prefs[k]=k==='n'?Number(v):v;save();renderHome();}
+  else if(a==='start')startNew();
+  else if(a==='review')startReview();
+  else if(a==='opt'){if(Q)choose(Number(b.dataset.k));}
+  else if(a==='giveup'){if(Q)giveup();}
+  else if(a==='next')next();
+  else if(a==='oops'){if(Q){const it=Q.items[Q.i];if(it.done&&!it.ok){it.skip=!it.skip;renderQ();}}}
+  else if(a==='say')speak(b.dataset.w);
+  else if(a==='say-slow'){if(Q)speak(Q.items[Q.i].w.w,0.55);}
+  else if(a==='sound'){S.prefs.sound=!S.prefs.sound;save();if(!S.prefs.sound&&TTS)TTS.cancel();if(Q)renderQ();}
+  else if(a==='quit'){if(Q){Q.quitAsk=true;renderQ();}}
+  else if(a==='quit-no'){if(Q){Q.quitAsk=false;renderQ();focusSpell();}}
+  else if(a==='quit-yes'){Q=null;show('home');renderHome();}
+  else if(a==='retry'){if(R){const ag=R.wrong.concat(R.hinted||[]);if(ag.length)startQuiz(ag,'practice','다시 풀기',R.mode);}}
+  else if(a==='home'){if(G&&G.over)G=null;show('home');renderHome();}
+  else if(a==='copy-result')copyText(resultText(),'fb-result');
+  else if(a==='wday'){WV.day=b.dataset.val;renderWords();}
+  else if(a==='wview'){WV.view=b.dataset.val;renderWords();}
+  else if(a==='pday')togglePref('days',b.dataset.val);
+  else if(a==='pgroup')togglePref('groups',b.dataset.val);
+  else if(a==='pn'){S.prefs.n=Number(b.dataset.val);save();renderHome();}
+  else if(a==='cover'){WV.cover=!WV.cover;renderWords();}
+  else if(a==='tidy'){HV.tidy=!HV.tidy;renderHome();}
+  else if(a==='tidy-no'){HV.tidy=false;renderHome();}
+  else if(a==='tidy-keep'){const out=outKeys(),od=[...new Set(out.map(k=>BYW[k].d))].sort((x,y)=>x-y);out.forEach(k=>delete S.review[k]);HV.tidy=false;save();renderHome();toast(`Day ${od.join('·')} 단어 ${out.length}개를 지웠어요.`);}
+  else if(a==='tidy-all'){const n=revKeys().length;S.review={};HV.tidy=false;save();renderHome();toast(`다시 볼 단어 ${n}개를 모두 지웠어요.`);}
+  else if(a==='game')startGame();
+  else if(a==='gskip')gSubmit(true);
+  else if(a==='gquit'){if(G&&!G.over){G.ask=true;$('#gFoot').innerHTML=`<div class="quitask"><p>그만하면 이번 대결은 끝나요.</p><div class="row"><button class="sbtn" data-act="gquit-no">계속하기</button><button class="sbtn danger" data-act="gquit-yes">그만하기</button></div></div>`;}}
+  else if(a==='gquit-no'){if(G){G.ask=false;G.last=performance.now();$('#gFoot').innerHTML=`<button class="sbtn" data-act="gquit">그만하기</button>`;gFocus();}}
+  else if(a==='gquit-yes')quitGame();
+  else if(a==='reveal'){if(WV.cover)b.classList.toggle('show');}
+});
+document.addEventListener('submit',e=>{
+  if(e.target.id==='spellForm'){e.preventDefault();if(Q)submitSpell($('#spellIn').value);}
+  else if(e.target.id==='gForm'){e.preventDefault();gSubmit(false);}
+});
+document.addEventListener('input',e=>{if(e.target.id==='gIn')gInput(e.target);});
+/* 대결 중 버튼을 눌러도 입력칸 포커스가 유지되게 (휴대폰 자판이 닫히지 않게) */
+document.addEventListener('mousedown',e=>{if(e.target.closest&&e.target.closest('#gForm button,[data-act=gskip]'))e.preventDefault();});
+document.addEventListener('input',e=>{
+  if(e.target.id!=='spellIn'||!Q)return;
+  const it=Q.items[Q.i];it.draft=e.target.value;
+  $('#tiles').outerHTML=tiles(it.w.w,typedOf(it.draft),false,it.hint);
+  $('#imeWarn').hidden=!HANGUL.test(it.draft);
+});
+document.addEventListener('keydown',e=>{
+  if(cur==='words'&&e.key==='Enter'&&e.target.classList&&e.target.classList.contains('wrow')){e.target.click();return;}
+  if(!Q||cur!=='quiz'||e.repeat)return;
+  if(e.target.closest&&e.target.closest('button,input,textarea'))return;
+  const it=Q.items[Q.i];
+  if(it.done&&e.key==='Enter'&&Date.now()-Q.answeredAt>350){e.preventDefault();next();}
+  else if(!it.done&&it.mode==='mc'&&/^[1-4]$/.test(e.key))choose(Number(e.key)-1);
+});
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&['home','words'].includes(cur)){renderHeader();render(cur);}
+});
+
+renderHeader();renderHome();show('home');
+</script>
+</body>
+</html>
